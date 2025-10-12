@@ -1,0 +1,279 @@
+# import types
+from aiogram import types
+import aiosqlite
+
+##  Функция обработки админов 2 группы
+async def get_subadmin_user_id():
+    connect = await aiosqlite.connect('bot.db')  
+    cursor = await connect.cursor()
+    users = await cursor.execute('SELECT user_id FROM users WHERE id_group=2')
+    users = await users.fetchall()
+    await cursor.close()
+    await connect.close()
+    users = [user[0] for user in users]
+    return users
+
+##  Функция обработки пользователей 3 группы
+async def get_subusers_user_id():
+    connect = await aiosqlite.connect('bot.db')  
+    cursor = await connect.cursor()
+    users = await cursor.execute('SELECT user_id FROM users WHERE id_group=3')
+    users = await users.fetchall()
+    await cursor.close()
+    await connect.close()
+    users = [user[0] for user in users]
+    return users
+
+##  Функция записи реферала
+async def get_referrer_user_id(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    referrer_id = await cursor.execute('SELECT referrer_id FROM users WHERE user_id=?', (user_id,))
+    referrer_id = await referrer_id.fetchone()
+    await cursor.close()
+    await connect.close()
+    return referrer_id
+
+##  Функция проверки реквизитов
+async def get_referrer_wallet(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    wallet_id = await cursor.execute('SELECT COALESCE(wallet_id, 0) FROM users WHERE user_id=?', (user_id,))
+    wallet_id = await wallet_id.fetchone()
+    await cursor.close()
+    await connect.close()
+    return wallet_id[0]
+
+##  Функция проверки суммы реферала для выплаты
+async def get_referrer_bounty_sum(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bounty_sum = await cursor.execute('SELECT COALESCE(bounty_sum, 0) FROM users WHERE user_id=?', (user_id,))
+    bounty_sum = await bounty_sum.fetchone()
+    await cursor.close()
+    await connect.close()
+    return bounty_sum[0]
+
+##  Функция получения username
+async def get_username_for_bouynt(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    username_bounty = await cursor.execute('SELECT COALESCE(username, 0) FROM users WHERE user_id=?', (user_id,))
+    username_bounty = await username_bounty.fetchone()
+    await cursor.close()
+    await connect.close()
+    return username_bounty[0]
+
+## Функции для получения и изменения минимальной выплаты
+async def get_min_cashback():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    min_cashback = await cursor.execute('SELECT value_int FROM others WHERE key="min_cashback";')
+    min_cashback = await min_cashback.fetchone()
+    await cursor.close()
+    await connect.close()
+    return min_cashback[0]
+
+async def get_bounty_cashback():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bounty_cashback = await cursor.execute('SELECT value_int FROM others WHERE key="bounty_cashback";')
+    bounty_cashback = await bounty_cashback.fetchone()
+    await cursor.close()
+    await connect.close()
+    return bounty_cashback[0]
+
+##  Функиции для редактирования саб-админов
+async def get_group_id_subadmin(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    subadmin_group_id = await cursor.execute('SELECT id_group FROM users WHERE username= ?;', (username,))
+    subadmin_group_id = await subadmin_group_id.fetchone()
+    await cursor.close()
+    await connect.close()
+    if subadmin_group_id is None:
+        return None
+    return subadmin_group_id[0]
+
+#  Повысить до уровня Саб-админа
+async def put_group_id_subadmin(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    edit_subadmin = await cursor.execute('UPDATE users SET id_group = 2 WHERE username= ?;', (username,))
+    await connect.commit()
+    edit_subadmin = await edit_subadmin.fetchone()
+    await cursor.close()
+    await connect.close()
+
+#  Понизить до уровня пользователя
+async def del_groupid_subadmin(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    edit_subadmin = await cursor.execute('UPDATE users SET id_group = 3 WHERE username= ?;', (username,))
+    await connect.commit()
+    edit_subadmin = await edit_subadmin.fetchone()
+    await cursor.close()
+    await connect.close()
+
+## Получение текущей реферальной ссылки
+async def get_link_subadmin(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    subadmin_link = await cursor.execute('SELECT link FROM users WHERE username= ?;', (username,))
+    subadmin_link = await subadmin_link.fetchone()
+    await cursor.close()
+    await connect.close()
+    if subadmin_link is None:
+        return None
+    return subadmin_link[0]
+
+##  Изменение реферальной ссылки
+async def edit_link_subadmin(subadmin_link, username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    edit_link = await cursor.execute('UPDATE users SET link = ? WHERE username= ?;', (subadmin_link, username,))
+    await connect.commit()
+    edit_link = await edit_link.fetchone()
+    await cursor.close()
+    await connect.close()
+
+####  SUB-ADMIN  ####
+##  Получение количества рефералов
+async def get_count_referal(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    count_referal = await cursor.execute('SELECT count_ref FROM users WHERE user_id= ?;', (user_id,))
+    count_referal = await count_referal.fetchone()
+    await cursor.close()
+    await connect.close()
+    if count_referal is None:
+        return None
+    return count_referal[0]
+
+async def get_current_cashback(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    current_cashback = await cursor.execute('SELECT bounty_sum FROM users WHERE user_id= ?;', (user_id,))
+    current_cashback = await current_cashback.fetchone()
+    await cursor.close()
+    await connect.close()
+    if current_cashback is None:
+        return None
+    return current_cashback[0]
+
+##  Проверяем была ли выплата
+async def get_paid_value(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    paid_value = await cursor.execute('SELECT paid FROM users WHERE user_id=?', (user_id,))
+    paid_value = await paid_value.fetchone()
+    await cursor.close()
+    await connect.close()
+    return paid_value[0]
+
+##  Изменяем статус на оплочено
+async def update_paid_value(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    edit_paid_value = await cursor.execute('UPDATE users SET paid = "yes" WHERE user_id= ?;', (user_id,))
+    await connect.commit()
+    edit_paid_value = await edit_paid_value.fetchone()
+    await cursor.close()
+    await connect.close()
+
+##  Получаем и начислаем деньги на баланс рефералу
+async def get_bounty_sum(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    paid_value = await cursor.execute('SELECT bounty_sum FROM users WHERE user_id=?', (user_id,))
+    paid_value = await paid_value.fetchone()
+    await cursor.close()
+    await connect.close()
+    return paid_value[0]
+
+async def update_bounty_sum_value(paid_sum, user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    edit_paid_sum = await cursor.execute('UPDATE users SET bounty_sum = ? WHERE user_id= ?;', (paid_sum, user_id,))
+    await connect.commit()
+    edit_paid_sum = await edit_paid_sum.fetchone()
+    await cursor.close()
+    await connect.close()
+
+####  STATISTIC  ####
+##  Получаем кортеж всех саб-админов
+async def get_all_admin_count_referal():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    subadmin_users = await cursor.execute('SELECT username FROM users WHERE id_group=2;')
+    subadmin_users = await subadmin_users.fetchall()
+    await cursor.close()
+    await connect.close()
+    return subadmin_users
+
+##  Получаем количество приглашенных 
+async def get_admin_count_referal(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    count_referal = await cursor.execute('SELECT count_ref FROM users WHERE username= ?;', (username,))
+    count_referal = await count_referal.fetchone()
+    await cursor.close()
+    await connect.close()
+    if count_referal is None:
+        return None
+    return count_referal[0]
+
+## Получаем сумму для вывода
+async def get_admin_current_cashback(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    current_cashback = await cursor.execute('SELECT bounty_sum FROM users WHERE username= ?;', (username,))
+    current_cashback = await current_cashback.fetchone()
+    await cursor.close()
+    await connect.close()
+    if current_cashback is None:
+        return None
+    return current_cashback[0]
+
+##  Получаем реферальную ссылку админа
+async def get_admin_referal_link(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    referal_link = await cursor.execute('SELECT link FROM users WHERE username= ?;', (username,))
+    referal_link = await referal_link.fetchone()
+    await cursor.close()
+    await connect.close()
+    if referal_link is None:
+        return None
+    return referal_link[0]
+
+##  Просмотр и редактирование сообщений
+async def call_message_edit(message_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    text_hello = await cursor.execute('SELECT text FROM msg_kb WHERE id = ?', (message_id, ))
+    text_hello = await text_hello.fetchone()
+    photo = await cursor.execute('SELECT photo FROM msg_kb WHERE id = ?', (message_id, ))
+    photo = await photo.fetchone()
+    video = await cursor.execute('SELECT video FROM msg_kb WHERE id = ?', (message_id, ))
+    video = await video.fetchone()
+    name_button = await cursor.execute('SELECT reply_markup FROM msg_kb WHERE id = ?', (message_id, ))
+    name_button = await name_button.fetchone()
+    url_button = await cursor.execute('SELECT url FROM msg_kb WHERE id = ?', (message_id, ))
+    url_button = await url_button.fetchone()
+    await cursor.close()
+    await connect.close()
+    text_hello = text_hello[0]
+    photo = photo[0]
+    video = video[0]
+    name_button = name_button[0]
+    url_button = url_button[0]
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text=name_button, url=url_button)]
+    ])
+    return{
+        'text': text_hello,
+        'photo': photo,
+        'video': video,
+        'reply_markup': kb
+    }
