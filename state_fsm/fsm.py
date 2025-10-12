@@ -7,6 +7,7 @@ class AdminState(StatesGroup):
     fsm_url_button_name = State()
     fms_message_media = State()
     fms_message_text = State()
+    fms_message_timer = State()
     ##  Рассылка
     waiting_for_admin_news = State()
     waiting_for_user_news = State()

@@ -1,7 +1,5 @@
 from aiogram import types
 from config_data.config import Config, load_config
-from functions.db_handler import get_all_admin_count_referal
-
 
 config: Config = load_config()
 admin_link=config.tg_bot.admin_link
@@ -31,40 +29,6 @@ subadmin_kb = [
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')],
 ]
 
-# hello_kb = [
-#     [types.InlineKeyboardButton(text='📝 1-e сообщение', callback_data='first_message')],
-#     [types.InlineKeyboardButton(text='📝 2-e сообщение', callback_data='second_message')],
-#     [types.InlineKeyboardButton(text='📝 Последнее сообщение', callback_data='last_message')],
-#     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')]
-# ]
-
-# ##  Клавиатура редактирования стартового сообщения
-# first_massage_edit_kb = [
-#         [types.InlineKeyboardButton(text='Изменить медиа 🏜️', callback_data='first_edit_media')],
-#         [types.InlineKeyboardButton(text='Изменить текст 📜', callback_data='first_edit_text')],
-#         [types.InlineKeyboardButton(text='Изменить название кнопки 📌', callback_data='first_edit_button')],
-#         [types.InlineKeyboardButton(text='Изменить пост 📮', callback_data='first_edit_message')],
-#         [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_hello_kb')]
-#     ]
-
-# ##  Клавиатура редактирования второго стартового сообщения
-# second_message_edit_kb = [
-#         [types.InlineKeyboardButton(text='Изменить медиа 🏜️', callback_data='second_edit_media')],
-#         [types.InlineKeyboardButton(text='Изменить текст 📜', callback_data='second_edit_text')],
-#         [types.InlineKeyboardButton(text='Изменить название кнопки 📌', callback_data='second_edit_button')],
-#         [types.InlineKeyboardButton(text='Изменить пост 📮', callback_data='second_edit_message')],
-#         [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_hello_kb')]
-#     ]
-
-# ##  Клавиатура редактирования второго стартового сообщения
-# last_message_edit_kb = [
-#         [types.InlineKeyboardButton(text='Изменить медиа 🏜️', callback_data='last_edit_photo')],
-#         [types.InlineKeyboardButton(text='Изменить текст 📜', callback_data='last_edit_text')],
-#         [types.InlineKeyboardButton(text='Изменить ссылку 🔗', callback_data='last_edit_url_button')],
-#         [types.InlineKeyboardButton(text='Изменить пост 📮', callback_data='last_edit_message')],
-#         [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_hello_kb')]
-#     ]
-
 ## Клавиатура меню рассылки
 mailing_menu = [
         [types.InlineKeyboardButton(text='📩Рассылка админам', callback_data='admin_news')],
@@ -90,18 +54,6 @@ mailing_user_menu = [
 button_back_to_privetka = [
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='admin_hello_message')]
 ]
-
-# button_back_first_message = [
-#     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='first_message')]
-# ]
-
-# button_back_second_message = [
-#     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='second_message')]
-# ]
-
-# button_back_last_message = [
-#     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='last_message')]
-# ]
 
 button_back_subadmin = [
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='admin_edit')]

@@ -290,6 +290,36 @@ async def process_button_name(message: types.Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
 
+##  Редактируем таймер для сообщений
+@router.callback_query(lambda c: c.data and c.data.startswith('timer_') and c.data[6].isdigit())
+async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
+    message_id = int(query.data[6:])
+    await query.message.answer('⏱️ Отправь значение времени в секундах\n\n' \
+                               '⚠️ Внимание, отсчет происходит от первого прожатия /start пользователем\n\n' \
+                               'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
+    await state.update_data(message_id=message_id)
+    await state.set_state(AdminState.fms_message_timer)
+
+@router.message(AdminState.fms_message_timer)
+async def process_media_put(message: types.Message, state: FSMContext):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    data = await state.get_data()
+    message_id = data.get('message_id')
+    new_timer = message.text
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    process_timer_put = await cursor.execute('UPDATE msg_kb SET timer = ? WHERE id=?', (new_timer, message_id, ))
+    await connect.commit()
+    process_timer_put = await process_timer_put.fetchone()
+    await cursor.close()
+    await connect.close()
+    await message.answer(f"✅ Таймер для  {message_id}-ого приветственного сообщения изменен\n"
+                         f"Текущее значение {new_timer} секунд\n\n"
+                         '⚙️ Меню сообщений', reply_markup=await kb.reply_menu())
+    await state.clear()
+    
+
 ##  Добавление целого поста
 @router.callback_query(F.data == 'add_message')
 async def add_new_message_for_user(query: types.CallbackQuery, state: FSMContext):

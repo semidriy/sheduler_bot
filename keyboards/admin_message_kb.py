@@ -20,13 +20,23 @@ async def reply_menu():
     for msg_tuple in msgs:
         # msg_tuple - это кортеж (1,), извлекаем первый элемент
         msg_id = msg_tuple[0]
+
+        ##  Блок для показа таймеров
+        connect = await aiosqlite.connect('bot.db')
+        cursor = await connect.cursor()
+        msg_timer = await cursor.execute('SELECT timer FROM msg_kb WHERE id=?', (msg_id, ))
+        await connect.commit()
+        msg_timer = await msg_timer.fetchone()
+        await cursor.close()
+        await connect.close()
+
         keyboard.add(InlineKeyboardButton(
             text=f"✏️ {msg_id}-е сообщение",
             callback_data=f"message_{msg_id}"
         ))
         
         keyboard.add(InlineKeyboardButton(
-            text="⏳ Тайминг",
+            text=f"{msg_timer[0]}s ⏳ Time",
             callback_data=f"timer_{msg_id}"
         ))
 
