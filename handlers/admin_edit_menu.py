@@ -18,7 +18,7 @@ async def admin_hello_message(query: types.CallbackQuery):
 
 @router.callback_query(F.data == 'grant_subadmin_profile', IsAdmin())
 async def process_add_subadmin(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('👀 Введите USERNAME пользователя без @ для добавление в группу саб-админов')
+    await query.message.edit_text('👀 Введите USERNAME пользователя без @ для добавление в группу саб-админов', reply_markup=kb_button_back_subadmin)
     await state.set_state(AdminState.fsm_add_subadmin)
 
 @router.message(AdminState.fsm_add_subadmin)
@@ -42,7 +42,7 @@ async def add_subadmin(message:types.Message, state:FSMContext):
 
 @router.callback_query(F.data == 'grant_down_subadmin_profile', IsAdmin())
 async def process_del_subadmin(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('⚠️ Введите USERNAME пользователя без @ для УДАЛЕНИЯ из группы саб-админов')
+    await query.message.edit_text('⚠️ Введите USERNAME пользователя без @ для УДАЛЕНИЯ из группы саб-админов', reply_markup=kb_button_back_subadmin)
     await state.set_state(AdminState.fsm_del_subadmin)
 
 @router.message(AdminState.fsm_del_subadmin)
@@ -66,7 +66,7 @@ async def delete_subadmin(message:types.Message, state:FSMContext):
 
 @router.callback_query(F.data == 'edit_bounty_link', IsAdmin())
 async def process_edit_link_subadmin(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('⚠️ Введите USERNAME пользователя без @ для изменения реферальной ссылки')
+    await query.message.edit_text('⚠️ Введите USERNAME пользователя без @ для изменения реферальной ссылки', reply_markup=kb_button_back_subadmin)
     await state.set_state(AdminState.fsm_process_link_bounty)
 
 @router.message(AdminState.fsm_process_link_bounty)

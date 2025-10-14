@@ -323,7 +323,7 @@ async def process_media_put(message: types.Message, state: FSMContext):
 ##  Добавление целого поста
 @router.callback_query(F.data == 'add_message')
 async def add_new_message_for_user(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('💬 Введите текст под картинкой:\n\n' \
+    await query.message.edit_text('📳 Пришли мне целый пост:\n\n' \
                                'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
     await state.set_state(AdminState.fsm_new_post)
 
