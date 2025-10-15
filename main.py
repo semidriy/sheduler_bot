@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram import F
-from handlers import admin, admin_edit_menu, mailing_list, start, mailing_list_users, referrer, cashback, admin_statistic, builder
+from handlers import admin, admin_edit_menu, mailing_list, start, mailing_list_users, referrer, cashback, admin_statistic, builder, capcha
 from aiogram.client.default import DefaultBotProperties
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -30,6 +30,7 @@ async def main():
     dp.include_router(admin_edit_menu.router)
     dp.include_router(admin_statistic.router)
     dp.include_router(builder.router)
+    dp.include_router(capcha.router)
 
     bot = Bot(
         token=config.tg_bot.token,

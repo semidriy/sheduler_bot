@@ -1,5 +1,3 @@
-from ssl import SSLContext
-from aiogram.filters import Command
 from aiogram import types, F, Router
 from aiogram.types import CallbackQuery
 import aiosqlite
@@ -17,7 +15,7 @@ kb_button_back_to_privetka = types.InlineKeyboardMarkup(inline_keyboard=button_b
 
 @router.callback_query(F.data == 'admin_hello_message')
 async def message_git(query: types.CallbackQuery):
-    await query.message.edit_text('⚙️ Меню сообщений', reply_markup=await kb.reply_menu())
+    await query.message.edit_text('⚙️ Меню приветки', reply_markup=await kb.reply_menu())
 
 ##  Удаление сообщений
 @router.callback_query(lambda c: c.data and c.data.startswith('delete_') and c.data[7:].isdigit())
@@ -136,7 +134,7 @@ async def process_media_put(message: types.Message, state: FSMContext):
 async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
     message_id = int(query.data[10:])
     await query.message.answer('💬 Введите текст\n\n' \
-                               '⚠️ Можешь так же прислать мне пост ,я сам заберу медиа файл\n\n' \
+                               '⚠️ Можешь так же прислать мне пост ,я сам заберу текст\n\n' \
                                '⚠️ Чтобы убрать подпись(пусто) - отправь любую картинку\n\n' \
                                'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
     await state.update_data(message_id=message_id)
@@ -159,8 +157,6 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
     await connect.close()
     await message.answer(f'✅ Текст {message_id}-ого приветственного сообщение изменен\n\n')
     await state.clear()
-    # await call_message_edit(message_id)
-    # await message.answer('Что еще ты хочешь отредактировать?', reply_markup=await kb.edit_menu(message_id))
     msg_data = await call_message_edit(message_id)
     try:
         await message.answer(f'Вы смотрите {message_id}-ое сообщение')

@@ -7,7 +7,8 @@ admin_link=config.tg_bot.admin_link
 ##  Клавиатура Админ меню
 admin_kb = [
     [
-        types.InlineKeyboardButton(text='🙋🏼‍♂️ Приветствие', callback_data='admin_hello_message')
+        types.InlineKeyboardButton(text='🙋🏼‍♂️ Приветствие', callback_data='admin_hello_message'),
+        types.InlineKeyboardButton(text='🔞 Капча', callback_data='capcha_message'),
     ],
     [
         types.InlineKeyboardButton(text='📮 Рассылка', callback_data='news'),
@@ -53,6 +54,10 @@ mailing_user_menu = [
 ## Клавиатуры для возращений назад в меню редактирования сообщений
 button_back_to_privetka = [
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='admin_hello_message')]
+]
+
+button_back_to_capcha = [
+    [types.InlineKeyboardButton(text='🔙 Назад', callback_data='capcha_message')]
 ]
 
 button_back_subadmin = [

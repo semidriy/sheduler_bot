@@ -8,6 +8,12 @@ class AdminState(StatesGroup):
     fms_message_media = State()
     fms_message_text = State()
     fms_message_timer = State()
+    fsm_new_post = State()
+    ##  Редактирование Capcha
+    fsm_capcha_button_name = State()
+    fsm_capcha_media = State()
+    fsm_capcha_text = State()
+    fsm_new_capcha = State()
     ##  Рассылка
     waiting_for_admin_news = State()
     waiting_for_user_news = State()
@@ -22,8 +28,6 @@ class AdminState(StatesGroup):
     fsm_process_link_bounty = State()
     fsm_edit_link_bounty = State()
 
-    ##  Новое сообщение
-    fsm_new_post = State()
     fsm_new_photo = State()
     
 

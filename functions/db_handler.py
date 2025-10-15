@@ -277,3 +277,32 @@ async def call_message_edit(message_id):
         'video': video,
         'reply_markup': kb
     }
+
+##  Просмотр и редактирование капчи
+async def call_capcha_edit(message_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    text_hello = await cursor.execute('SELECT text FROM capcha_kb WHERE id = ?', (message_id, ))
+    text_hello = await text_hello.fetchone()
+    photo = await cursor.execute('SELECT photo FROM capcha_kb WHERE id = ?', (message_id, ))
+    photo = await photo.fetchone()
+    video = await cursor.execute('SELECT video FROM capcha_kb WHERE id = ?', (message_id, ))
+    video = await video.fetchone()
+    name_button = await cursor.execute('SELECT reply_markup FROM capcha_kb WHERE id = ?', (message_id, ))
+    name_button = await name_button.fetchone()
+
+    await cursor.close()
+    await connect.close()
+    text_hello = text_hello[0]
+    photo = photo[0]
+    video = video[0]
+    name_button = name_button[0]
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text=name_button, callback_data='callback_data')]
+    ])
+    return{
+        'text': text_hello,
+        'photo': photo,
+        'video': video,
+        'reply_markup': kb
+    }
