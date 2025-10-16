@@ -86,16 +86,48 @@ async def call_first_start(message: types.Message) -> None:
     button_name = await first_name_button()
     button_name = button_name[0]
 
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=button_name, callback_data='start_capcha')]
-    ])
+    # Преобразуем JSON строку в объект клавиатуры
+    import json
+    try:
+        keyboard_dict = json.loads(button_name)
+        
+        # Создаем клавиатуру вручную из словаря
+        keyboard = keyboard_dict.get("keyboard", [])
+        keyboard_buttons = []
+        
+        for row in keyboard:
+            button_row = []
+            for button_data in row:
+                # Создаем кнопку с текстом
+                button = types.KeyboardButton(text=button_data.get("text", ""))
+                button_row.append(button)
+            keyboard_buttons.append(button_row)
+        
+        # Создаем объект клавиатуры с параметрами из JSON
+        reply_markup = types.ReplyKeyboardMarkup(
+            keyboard=keyboard_buttons,
+            resize_keyboard=keyboard_dict.get("resize_keyboard", True),
+            one_time_keyboard=keyboard_dict.get("one_time_keyboard", True),
+            is_persistent=keyboard_dict.get("is_persistent"),
+            input_field_placeholder=keyboard_dict.get("input_field_placeholder"),
+            selective=keyboard_dict.get("selective")
+        )
+        
+    except json.JSONDecodeError as e:
+        # Если возникла ошибка парсинга JSON, создаем клавиатуру по умолчанию
+        print(f"Ошибка парсинга JSON: {e}")
+        reply_markup = types.ReplyKeyboardMarkup(
+            keyboard=[[types.KeyboardButton(text="Shabbat")]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
 
     has_photo = hello_photo_id and hello_photo_id != 'NONE'
     has_video = hello_video_id and hello_video_id != 'NONE'
     
     if has_photo:
-        await message.answer_photo(photo=hello_photo_id, caption=text_hello_db, parse_mode="MarkdownV2")
+        await message.answer_photo(photo=hello_photo_id, caption=text_hello_db, reply_markup=reply_markup, parse_mode="MarkdownV2")
     elif has_video:
-        await message.answer_video(video=hello_video_id, caption=text_hello_db, parse_mode="MarkdownV2")
+        await message.answer_video(video=hello_video_id, caption=text_hello_db, reply_markup=reply_markup, parse_mode="MarkdownV2")
     else:
-        await message.answer(text=text_hello_db, parse_mode="MarkdownV2")
+        await message.answer(text=text_hello_db, reply_markup=reply_markup, parse_mode="MarkdownV2")
