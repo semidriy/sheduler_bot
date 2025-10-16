@@ -180,111 +180,103 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
 
-##  Редактируем название кнопки
-@router.callback_query(lambda c: c.data and c.data.startswith('edit_button_name_') and c.data[17].isdigit())
+##  Редактируем кнопку
+@router.callback_query(lambda c: c.data and c.data.startswith('edit_button_') and c.data[12].isdigit())
 async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
-    message_id = int(query.data[17:])
-    await query.message.answer('📍 Введи название кнопки:\n' \
+    message_id = int(query.data[12:])
+    await query.message.answer('🔞🔘 Отправьте боту список URL-кнопок в следующем формате👇:\n' \
+                               'Кнопка 1 - http://example1.com\n'
+                               'Кнопка 2 - http://example2.com\n\n'
                                'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
     await state.update_data(message_id=message_id)
-    await state.set_state(AdminState.fsm_message_button_name)
+    await state.set_state(AdminState.fsm_message_button)
 
-@router.message(AdminState.fsm_message_button_name)
-async def process_button_name(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    message_id = data.get('message_id')
-    if not message.text:
-        await message.answer('❌ Сообщение должно содержать только текст!\n\n' \
-                             '📌 Пришли пожалуйста название кнопки\n\n' \
-                             'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
-        return
-    new_name_button = message.md_text
-    connect = await aiosqlite.connect('bot.db')
-    cursor = await connect.cursor()
-    hello_buttom = await cursor.execute('UPDATE msg_kb SET reply_markup = ? WHERE id=?', (new_name_button, message_id, ))
-    await connect.commit()
-    hello_buttom = await hello_buttom.fetchone()
-    await cursor.close()
-    await connect.close()
-    await message.answer(f"✅ Название кнопки {message_id}-ого приветственного сообщения изменено на: \n\n")
-    await state.clear()
-    msg_data = await call_message_edit(message_id)
+@router.message(AdminState.fsm_message_button)
+async def process_capcha_buttons(message: types.Message, state: FSMContext):
     try:
-        await message.answer(f'Вы смотрите {message_id}-ое сообщение')
-        msg_data = await call_message_edit(message_id)
-        if msg_data['video'] and msg_data['video'] != 'NONE':
-            await message.answer_video(
-                video=msg_data['video'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️ Что хотели бы отредактировать?', reply_markup=await kb.edit_menu(message_id))
-        elif msg_data['photo'] and msg_data['photo'] != 'NONE':
-            await message.answer_photo(
-                photo=msg_data['photo'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️ Что хотели бы отредактировать?', reply_markup=await kb.edit_menu(message_id))
-    except Exception as e:
-        await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
+        # Получаем данные из состояния
+        state_data = await state.get_data()
+        message_id = state_data.get('message_id')
 
-##  Редактиуем ссылку
-@router.callback_query(lambda c: c.data and c.data.startswith('edit_url_') and c.data[9].isdigit())
-async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
-    message_id = int(query.data[9:])
-    await query.message.answer('🔗 Введи ссылку для кнопки:\n' \
-                               'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
-    await state.update_data(message_id=message_id)
-    await state.set_state(AdminState.fsm_url_button_name)
+        # Парсим текст с кнопками
+        button_lines = message.text.strip().split('\n')
+        keyboard = []
+        
+        for line in button_lines:
+            line = line.strip()
+            if not line:
+                continue
 
-@router.message(AdminState.fsm_url_button_name)
-async def process_button_name(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    message_id = data.get('message_id')
-    button_url = message.text.strip()
-# Проверяем, что URL начинается с http:// или https://
-    if not (button_url.startswith('http://') or button_url.startswith('https://')):
-        await message.answer(
-        '❌ URL должен начинаться с http:// или https://\n'
-        'Введите URL повторно или вернитесь назад\n\n'
-        'Или вернитесь назад', 
-        reply_markup=kb_button_back_to_privetka
-        )
-        return  # Прерываем выполнение функции
-    connect = await aiosqlite.connect('bot.db')
-    cursor = await connect.cursor()
-    procces_button_url = await cursor.execute('UPDATE msg_kb SET url = ? WHERE id=?', (button_url, message_id, ))
-    await connect.commit()
-    procces_button_url = await procces_button_url.fetchone()
-    await cursor.close()
-    await connect.close()
-    await message.answer(f'✅ Название кнопки {message_id}-ого приветственного сообщения изменено')
-    await state.clear()
-    msg_data = await call_message_edit(message_id)
-    try:
-        await message.answer(f'Вы смотрите {message_id}-ое сообщение')
+        # Разделяем на текст и URL (разделитель " - " или " — ")
+            if ' - ' in line:
+                parts = line.split(' - ', 1)
+            elif ' — ' in line:
+                parts = line.split(' — ', 1)
+            else:
+                await message.answer(f"❌ Неверный формат строки: {line}\n\n" \
+                                    "Используйте формат: Текст кнопки - http://example.com")
+                return
+            
+            if len(parts) != 2:
+                await message.answer(f"❌ Неверный формат строки: {line}\n\n" \
+                                    "Используйте формат: Текст кнопки - http://example.com")
+                return
+            
+            button_text = parts[0].strip()
+            button_url = parts[1].strip()
+
+            # Проверяем URL
+            if not button_url.startswith(('http://', 'https://')):
+                await message.answer(f"❌ Неверный URL: {button_url}\n\n" \
+                                    "URL должен начинаться с http:// или https://")
+                return
+            
+            # Добавляем кнопку в клавиатуру
+            keyboard.append([types.InlineKeyboardButton(text=button_text, url=button_url)])
+        
+        if not keyboard:
+            await message.answer("❌ Не найдено валидных кнопок")
+            return
+        
+        # Создаем клавиатуру
+        reply_markup = types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+        reply_markup_json = reply_markup.model_dump_json()
+
+        connect = await aiosqlite.connect('bot.db')
+        cursor = await connect.cursor()
+        hello_buttom = await cursor.execute('UPDATE msg_kb SET reply_markup = ? WHERE id=?', (reply_markup_json, message_id, ))
+        await connect.commit()
+        hello_buttom = await hello_buttom.fetchone()
+        await cursor.close()
+        await connect.close()
+        await message.answer(f"✅ Кнопка приветки {message_id}-ого сообщения изменена: \n\n")
+        await state.clear()
         msg_data = await call_message_edit(message_id)
-        if msg_data['video'] and msg_data['video'] != 'NONE':
-            await message.answer_video(
-                video=msg_data['video'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️ Что хотели бы отредактировать?', reply_markup=await kb.edit_menu(message_id))
-        elif msg_data['photo'] and msg_data['photo'] != 'NONE':
-            await message.answer_photo(
-                photo=msg_data['photo'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️ Что хотели бы отредактировать?', reply_markup=await kb.edit_menu(message_id))
+
+        try:
+            await message.answer(f'Вы смотрите {message_id}-ое сообщение')
+            if msg_data['video'] and msg_data['video'] != 'NONE':
+                await message.answer_video(
+                    video=msg_data['video'], 
+                    caption=msg_data['text'], 
+                    reply_markup=msg_data['reply_markup'], 
+                    parse_mode="MarkdownV2"
+                )
+                await message.answer('⚙️ Вы редактируете приветку', reply_markup=await kb.edit_menu(message_id))
+            elif msg_data['photo'] and msg_data['photo'] != 'NONE':
+                await message.answer_photo(
+                    photo=msg_data['photo'], 
+                    caption=msg_data['text'], 
+                    reply_markup=msg_data['reply_markup'], 
+                    parse_mode="MarkdownV2"
+                )
+                await message.answer('⚙️ Вы редактируете приветку', reply_markup=await kb.edit_menu(message_id))
+        except Exception as e:
+            await message.answer(f"❌ Произошла ошибка: {str(e)}")
+            print(f"Произошла ошибка: {str(e)}")
     except Exception as e:
-        await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
+        await message.answer(f"❌ Произошла ошибка: {str(e)}")
+        print(f"Произошла ошибка: {str(e)}")
 
 ##  Редактируем таймер для сообщений
 @router.callback_query(lambda c: c.data and c.data.startswith('timer_') and c.data[6].isdigit())
@@ -315,11 +307,10 @@ async def process_media_put(message: types.Message, state: FSMContext):
                          '⚙️ Меню сообщений', reply_markup=await kb.reply_menu())
     await state.clear()
     
-
 ##  Добавление целого поста
 @router.callback_query(F.data == 'add_message')
 async def add_new_message_for_user(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('📳 Пришли мне целый пост:\n\n' \
+    await query.message.edit_text('🔞📳 Пришли мне целый пост:\n\n' \
                                'Или вернитесь назад', reply_markup=kb_button_back_to_privetka)
     await state.set_state(AdminState.fsm_new_post)
 
@@ -332,10 +323,7 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
                                  'Пост не содержит кнопку\n\n' \
                                  '📝 Пришли целый пост', reply_markup=kb_button_back_to_privetka)
             return
-        else:
-            markup_data = json.loads(message.reply_markup.model_dump_json())
-            text_button = markup_data['inline_keyboard'][0][0]['text']
-            url_button = markup_data['inline_keyboard'][0][0]['url']
+        reply_markup_json = message.reply_markup.model_dump_json() if message.reply_markup else None
     except Exception as e:
         await message.answer(f"Произошла ошибка при сохранении: {str(e)}")
         print(f"Произошла ошибка при сохранении: {str(e)}")
@@ -344,10 +332,9 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
         'text' : message.md_text if message.photo or message.video else None,
         'photo': message.photo[-1].file_id if message.photo else None,
         'video': message.video.file_id if message.video else None,
-        'reply_markup': text_button if message.reply_markup else None,
-        'url': url_button if message.reply_markup else None
+        'reply_markup': reply_markup_json
     }
-    # ##  блок записи в БД
+    ##  блок записи в БД
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
     current_id = await cursor.execute('SELECT max(id) FROM msg_kb')
@@ -358,19 +345,17 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
         current_id = int(current_id[0]) + 1
     if message.photo:
         put_photo = await cursor.execute('''
-            INSERT INTO msg_kb (id, text, photo, reply_markup, url)
-            VALUES (?, ?, ?, ?, ?)                 
-            ''', (current_id, message_data['text'], message_data['photo'], message_data['reply_markup'], message_data['url']))
+            INSERT INTO msg_kb (id, text, photo, reply_markup)
+            VALUES (?, ?, ?, ?)                 
+            ''', (current_id, message_data['text'], message_data['photo'], message_data['reply_markup']))
         await connect.commit()
         put_photo = await put_photo.fetchone()
-        await message.answer('✅ Пост успешно добавлен', reply_markup=await kb.reply_menu())
     elif message.video:
         put_photo = await cursor.execute('''
-            INSERT INTO msg_kb (id, text, video, reply_markup, url)
-            VALUES (?, ?, ?, ?, ?)                 
-            ''', (current_id, message_data['text'], message_data['video'], message_data['reply_markup'], message_data['url']))
+            INSERT INTO msg_kb (id, text, video, reply_markup)
+            VALUES (?, ?, ?, ?)                 
+            ''', (current_id, message_data['text'], message_data['video'], message_data['reply_markup']))
         await connect.commit()
         put_video = await put_video.fetchone()
-        await message.answer('✅ Пост успешно добавлен', reply_markup=await kb.reply_menu())
+    await message.answer('✅ Пост успешно добавлен', reply_markup=await kb.reply_menu())
     await state.clear()
-    

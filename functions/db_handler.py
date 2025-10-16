@@ -1,4 +1,3 @@
-# import types
 from aiogram import types
 import aiosqlite
 
@@ -257,25 +256,35 @@ async def call_message_edit(message_id):
     photo = await photo.fetchone()
     video = await cursor.execute('SELECT video FROM msg_kb WHERE id = ?', (message_id, ))
     video = await video.fetchone()
-    name_button = await cursor.execute('SELECT reply_markup FROM msg_kb WHERE id = ?', (message_id, ))
-    name_button = await name_button.fetchone()
-    url_button = await cursor.execute('SELECT url FROM msg_kb WHERE id = ?', (message_id, ))
-    url_button = await url_button.fetchone()
+    reply_markup_json = await cursor.execute('SELECT reply_markup FROM msg_kb WHERE id = ?', (message_id, ))
+    reply_markup_json = await reply_markup_json.fetchone()
     await cursor.close()
     await connect.close()
+
+    # Извлекаем строку из кортежа
+    if isinstance(reply_markup_json, tuple):
+            reply_markup_json = reply_markup_json[0]
+
+    # Десериализуем клавиатуру из JSON
+    reply_markup = None
+    if reply_markup_json:
+        try:
+            reply_markup = types.InlineKeyboardMarkup.model_validate_json(reply_markup_json)
+        except Exception as e:
+            print(f"Ошибка при десериализации клавиатуры: {e}")
+            # Создаем заглушку если не удалось десериализовать
+            reply_markup = types.InlineKeyboardMarkup(inline_keyboard=[
+                [types.InlineKeyboardButton(text="❌ Ошибка загрузки кнопок", callback_data='error')]
+            ])
+
     text_hello = text_hello[0]
     photo = photo[0]
     video = video[0]
-    name_button = name_button[0]
-    url_button = url_button[0]
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=name_button, url=url_button)]
-    ])
     return{
         'text': text_hello,
         'photo': photo,
         'video': video,
-        'reply_markup': kb
+        'reply_markup': reply_markup
     }
 
 ##  Просмотр и редактирование капчи
@@ -288,21 +297,40 @@ async def call_capcha_edit(message_id):
     photo = await photo.fetchone()
     video = await cursor.execute('SELECT video FROM capcha_kb WHERE id = ?', (message_id, ))
     video = await video.fetchone()
-    name_button = await cursor.execute('SELECT reply_markup FROM capcha_kb WHERE id = ?', (message_id, ))
-    name_button = await name_button.fetchone()
+    reply_markup_json = await cursor.execute('SELECT button_name FROM capcha_kb WHERE id = ?', (message_id, ))
+    reply_markup_json = await reply_markup_json.fetchone()
 
     await cursor.close()
     await connect.close()
+
+    # Извлекаем строку из кортежа
+    if isinstance(reply_markup_json, tuple):
+            reply_markup_json = reply_markup_json[0]
+
+    # Десериализуем клавиатуру из JSON
+    reply_markup = None
+    if reply_markup_json and reply_markup_json != 'NONE':
+        try:
+            reply_markup = types.ReplyKeyboardMarkup.model_validate_json(reply_markup_json)
+        except Exception as e:
+            print(f"Ошибка при десериализации клавиатуры: {e}")
+            # Создаем заглушку если не удалось десериализовать
+            reply_markup = types.ReplyKeyboardMarkup(
+                keyboard=[
+                    [types.KeyboardButton(text="❌ Ошибка загрузки кнопок")]
+                ],
+                resize_keyboard=True
+            )
+    else:
+        # Если клавиатуры нет, создаем пустую или стандартную
+        reply_markup = types.ReplyKeyboardRemove()  # или можно создать пустую клавиатуру
+
     text_hello = text_hello[0]
     photo = photo[0]
     video = video[0]
-    name_button = name_button[0]
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=name_button, callback_data='callback_data')]
-    ])
     return{
         'text': text_hello,
         'photo': photo,
         'video': video,
-        'reply_markup': kb
+        'reply_markup': reply_markup
     }

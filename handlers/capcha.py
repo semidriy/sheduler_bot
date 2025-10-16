@@ -5,6 +5,7 @@ import json
 
 from functions.db_handler import call_capcha_edit
 import keyboards.admin_message_kb as kb
+# from keyboards.subadm_kb import get_simple_keyboard
 from state_fsm.fsm import AdminState
 from aiogram.fsm.context import FSMContext
 from keyboards.admin_kb import button_back_to_capcha
@@ -47,10 +48,11 @@ async def edit_message_handler_capcha(query: types.CallbackQuery):
         message_id = int(query.data[15:])
         await query.message.answer(f'🔞 Вы смотрите {message_id}-ую капчу')
         msg_data = await call_capcha_edit(message_id)
+
         if msg_data['video'] and msg_data['video'] != 'NONE':
             await query.message.answer_video(
                 video=msg_data['video'], 
-                caption=msg_data['text'], 
+                caption=msg_data['text'],
                 reply_markup=msg_data['reply_markup'], 
                 parse_mode="MarkdownV2"
             )
@@ -63,8 +65,16 @@ async def edit_message_handler_capcha(query: types.CallbackQuery):
                 parse_mode="MarkdownV2"
             )
             await query.message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
+        else:
+        # Если нет ни фото, ни видео
+            await query.message.answer(
+                text=msg_data['text'],
+                reply_markup=msg_data['reply_markup'],
+                parse_mode="MarkdownV2"
+            )
+            await query.message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
     except Exception as e:
-        await query.message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
+        print(f"Capcha.edit_message_handler_capcha| Ошибка при просмотре: {e}")
 
 ##  Редактируем медиа
 @router.callback_query(lambda c: c.data and c.data.startswith('capcha_edit_media_') and c.data[18].isdigit())
@@ -176,61 +186,115 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
 
-##  Редактируем название кнопки
-@router.callback_query(lambda c: c.data and c.data.startswith('capcha_edit_button_name_') and c.data[24].isdigit())
+##  Редактируем кнопку
+@router.callback_query(lambda c: c.data and c.data.startswith('capcha_edit_button_') and c.data[19].isdigit())
 async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
-    message_id = int(query.data[24:])
-    await query.message.answer('🔞📍 Введи название кнопки CAPCHA:\n' \
+    message_id = int(query.data[19:])
+    await query.message.answer('🔞🔘 Отправьте боту список URL-кнопок в следующем формате👇:\n' \
+                               'Кнопка 1\n'
+                               'Кнопка 2\n\n'
                                'Или вернитесь назад', reply_markup=kb_button_back_to_capcha)
     await state.update_data(message_id=message_id)
-    await state.set_state(AdminState.fsm_capcha_button_name)
+    await state.set_state(AdminState.fsm_capcha_button)
 
-@router.message(AdminState.fsm_capcha_button_name)
-async def process_button_name(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    message_id = data.get('message_id')
-    if not message.text:
-        await message.answer('❌ Сообщение должно содержать только текст!\n\n' \
-                             '📌 Пришли пожалуйста название кнопки\n\n' \
-                             'Или вернитесь назад', reply_markup=kb_button_back_to_capcha)
-        return
-    new_name_button = message.md_text
+@router.message(AdminState.fsm_capcha_button)
+async def process_capcha_buttons(message: types.Message, state: FSMContext):
+    try:
+        # Получаем данные из состояния
+        state_data = await state.get_data()
+        message_id = state_data.get('message_id')
+        # Парсим текст с кнопками
+        button_lines = message.text.strip().split('\n')
+        keyboard = []
+        
+        for line in button_lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Добавляем кнопку в клавиатуру
+            keyboard.append([types.KeyboardButton(text=line)])
+        
+        # Создаем клавиатуру
+        reply_markup = types.ReplyKeyboardMarkup(
+            keyboard=keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+
+        reply_markup_json = reply_markup.model_dump_json()
+
+        connect = await aiosqlite.connect('bot.db')
+        cursor = await connect.cursor()
+        await cursor.execute('UPDATE capcha_kb SET button_name = ? WHERE id=?', (reply_markup_json, message_id, ))
+        await connect.commit()
+        await cursor.close()
+        await connect.close()
+        await message.answer(f"🔞✅ Кнопка CAPCHA {message_id}-ого сообщения изменена: \n\n")
+        await state.clear()
+        msg_data = await call_capcha_edit(message_id)
+
+        try:
+            await message.answer(f'Вы смотрите {message_id}-ое сообщение')
+            if msg_data['video'] and msg_data['video'] != 'NONE':
+                await message.answer_video(
+                    video=msg_data['video'], 
+                    caption=msg_data['text'], 
+                    reply_markup=reply_markup, 
+                    parse_mode="MarkdownV2"
+                )
+                await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
+            elif msg_data['photo'] and msg_data['photo'] != 'NONE':
+                await message.answer_photo(
+                    photo=msg_data['photo'], 
+                    caption=msg_data['text'], 
+                    reply_markup=reply_markup, 
+                    parse_mode="MarkdownV2"
+                )
+                await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
+            else:
+                await message.answer(
+                text=msg_data.get('text', ''),
+                reply_markup=reply_markup,
+                parse_mode="MarkdownV2"
+            )
+        except Exception as e:
+            print(f"Capcha.process_capcha_buttons| Произошла ошибка: {str(e)}")
+    except Exception as e:
+        print(f"Capcha.process_capcha_buttons| Произошла ошибка: {str(e)}")
+
+##  Редактируем таймер для сообщений
+@router.callback_query(lambda c: c.data and c.data.startswith('capcha_timer_') and c.data[13].isdigit())
+async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
+    message_id = int(query.data[13:])
+    await query.message.answer('⏱️ Отправь значение времени в секундах для СПАМА КАПЧИ\n\n' \
+                               'Или вернитесь назад', reply_markup=kb_button_back_to_capcha)
+    await state.update_data(message_id=message_id)
+    await state.set_state(AdminState.fms_capcha_timer)
+
+@router.message(AdminState.fms_capcha_timer)
+async def process_media_put(message: types.Message, state: FSMContext):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    hello_buttom = await cursor.execute('UPDATE capcha_kb SET reply_markup = ? WHERE id=?', (new_name_button, message_id, ))
+    data = await state.get_data()
+    message_id = data.get('message_id')
+    new_timer = message.text
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    process_timer_put = await cursor.execute('UPDATE capcha_kb SET timer = ? WHERE id=?', (new_timer, message_id, ))
     await connect.commit()
-    hello_buttom = await hello_buttom.fetchone()
+    process_timer_put = await process_timer_put.fetchone()
     await cursor.close()
     await connect.close()
-    await message.answer(f"🔞✅ Название кнопки CAPCHA {message_id}-ого сообщения изменено на: \n\n")
+    await message.answer(f"🔞✅ СПАМЕР КАПЧА для  {message_id}-ого приветственного сообщения изменен\n"
+                         f"Текущее значение {new_timer} секунд\n\n"
+                         '⚙️ Меню сообщений', reply_markup=await kb.reply_menu_capcha())
     await state.clear()
-    msg_data = await call_capcha_edit(message_id)
-    try:
-        await message.answer(f'Вы смотрите {message_id}-ое сообщение')
-        if msg_data['video'] and msg_data['video'] != 'NONE':
-            await message.answer_video(
-                video=msg_data['video'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
-        elif msg_data['photo'] and msg_data['photo'] != 'NONE':
-            await message.answer_photo(
-                photo=msg_data['photo'], 
-                caption=msg_data['text'], 
-                reply_markup=msg_data['reply_markup'], 
-                parse_mode="MarkdownV2"
-            )
-            await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(message_id))
-    except Exception as e:
-        await message.answer(f"Ошибка при просмотре: {e}", show_alert=True)
-
 
 ##  Добавление целого поста
 @router.callback_query(F.data == 'capcha_add_message')
 async def add_new_message_for_user(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('🔞📳 Пришли мне целый пост:\n\n' \
+    await query.message.edit_text('🔞📳 Пришли мне текст и медиа:\n\n' \
                                'Или вернитесь назад', reply_markup=kb_button_back_to_capcha)
     await state.set_state(AdminState.fsm_new_capcha)
 
@@ -238,25 +302,26 @@ async def add_new_message_for_user(query: types.CallbackQuery, state: FSMContext
 async def edit_hello_text(message: types.Message, state: FSMContext):
     try:
         # Подготовка данных сообщения
-        if not message.reply_markup:
+        has_valid_content = (
+            message.md_text or  # просто текст
+            (message.photo and message.caption) or  # фото с подписью
+            (message.video and message.caption)  # видео с подписью
+        )
+
+        if not has_valid_content:
             await message.answer('❌ Ошибка!\n\n' \
-                                 'Пост не содержит кнопку\n\n' \
-                                 '📝 Пришли целый пост', reply_markup=kb_button_back_to_capcha)
-            return
-        else:
-            markup_data = json.loads(message.reply_markup.model_dump_json())
-            text_button = markup_data['inline_keyboard'][0][0]['text']
+                         'Нет картинки и текста, или видео и текста или текста\n\n' \
+                         'Отправь еще раз', reply_markup=kb_button_back_to_capcha)
     except Exception as e:
-        await message.answer(f"Произошла ошибка при сохранении: {str(e)}")
-        print(f"Произошла ошибка при сохранении: {str(e)}")
+        await message.answer(f"Capcha.edit_hello_text| Произошла ошибка при сохранении: {str(e)}")
+        print(f"Capcha.edit_hello_text| Произошла ошибка при сохранении: {str(e)}")
 
     message_data = {
-        'text' : message.md_text if message.photo or message.video else None,
+        'text' : message.md_text if message.photo or message.video else message.md_text,
         'photo': message.photo[-1].file_id if message.photo else None,
         'video': message.video.file_id if message.video else None,
-        'reply_markup': text_button if message.reply_markup else None
     }
-    # ##  блок записи в БД
+    ##  блок записи в БД
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
     current_id = await cursor.execute('SELECT max(id) FROM capcha_kb')
@@ -267,18 +332,88 @@ async def edit_hello_text(message: types.Message, state: FSMContext):
         current_id = int(current_id[0]) + 1
     if message.photo:
         put_photo = await cursor.execute('''
-            INSERT INTO capcha_kb (id, text, photo, reply_markup)
-            VALUES (?, ?, ?, ?)                 
-            ''', (current_id, message_data['text'], message_data['photo'], message_data['reply_markup']))
+            INSERT INTO capcha_kb (id, text, photo)
+            VALUES (?, ?, ?)                 
+            ''', (current_id, message_data['text'], message_data['photo']))
         await connect.commit()
         put_photo = await put_photo.fetchone()
-        await message.answer('🔞✅ CAPCHA Пост успешно добавлен', reply_markup=await kb.reply_menu_capcha())
     elif message.video:
         put_photo = await cursor.execute('''
-            INSERT INTO capcha_kb (id, text, video, reply_markup)
-            VALUES (?, ?, ?, ?)                 
-            ''', (current_id, message_data['text'], message_data['video'], message_data['reply_markup']))
+            INSERT INTO capcha_kb (id, text, video)
+            VALUES (?, ?, ?)                 
+            ''', (current_id, message_data['text'], message_data['video']))
         await connect.commit()
-        put_video = await put_video.fetchone()
-        await message.answer('🔞✅ CAPCHA Пост успешно добавлен', reply_markup=await kb.reply_menu_capcha())
+        put_photo = await put_photo.fetchone()
+    elif message.md_text:
+        put_photo = await cursor.execute('''
+            INSERT INTO capcha_kb (id, text)
+            VALUES (?, ?)
+            ''', (current_id, message_data['text']))
+        await connect.commit()
+        put_photo = await put_photo.fetchone()
     await state.clear()
+    await message.answer('👀 Введите название кнопки')
+    await state.set_state(AdminState.fsm_capcha_button_name)
+
+##  Добавляем кнопку
+@router.message(AdminState.fsm_capcha_button_name)
+async def add_button_privetka(message: types.Message, state: FSMContext):
+    button_lines = message.text.strip().split('\n')
+    keyboard = []
+    
+    for line in button_lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Добавляем кнопку в клавиатуру
+        keyboard.append([types.KeyboardButton(text=line)])
+        
+    # Создаем клавиатуру
+    reply_markup = types.ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+
+    reply_markup_json = reply_markup.model_dump_json()
+
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    current_id = await cursor.execute('SELECT max(id) FROM capcha_kb')
+    current_id = await cursor.fetchone()
+    await cursor.execute('UPDATE capcha_kb SET button_name = ? WHERE id=?', (reply_markup_json, current_id[0], ))
+    await connect.commit()
+    await cursor.close()
+    await connect.close()
+    await message.answer(f"🔞✅ Кнопка CAPCHA {current_id[0]}-ого сообщения изменена: \n\n")
+    await state.clear()
+    msg_data = await call_capcha_edit(current_id[0])
+
+    try:
+        await message.answer(f'Вы смотрите {current_id[0]}-ое сообщение')
+        if msg_data['video'] and msg_data['video'] != 'NONE':
+            await message.answer_video(
+                video=msg_data['video'], 
+                caption=msg_data['text'], 
+                reply_markup=reply_markup, 
+                parse_mode="MarkdownV2"
+            )
+            await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(current_id[0]))
+        elif msg_data['photo'] and msg_data['photo'] != 'NONE':
+            await message.answer_photo(
+                photo=msg_data['photo'], 
+                caption=msg_data['text'], 
+                reply_markup=reply_markup, 
+                parse_mode="MarkdownV2"
+            )
+            await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(current_id[0]))
+        else:
+            await message.answer(
+            text=msg_data.get('text', ''),
+            reply_markup=reply_markup,
+            parse_mode="MarkdownV2"
+            )
+            await message.answer('⚙️🔞 Вы редактируете CAPCHA', reply_markup=await kb.capcha_edit_menu(current_id[0]))
+    except Exception as e:
+        print(f"Capcha.add_button_privetka| Произошла ошибка: {str(e)}")

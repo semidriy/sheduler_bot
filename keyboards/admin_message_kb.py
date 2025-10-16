@@ -1,6 +1,6 @@
 ###
-from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
-from aiogram.types import KeyboardButton, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton
 import aiosqlite
 
 
@@ -79,13 +79,8 @@ async def edit_menu(message_id):
     ))
 
     keyboard.add(InlineKeyboardButton(
-        text="📝 Изменить имя кнопки",
-        callback_data=f"edit_button_name_{message_id}"
-    ))
-
-    keyboard.add(InlineKeyboardButton(
-        text="📝 Изменить ссылку",
-        callback_data=f"edit_url_{message_id}"
+        text="🔘 Изменить кнопку",
+        callback_data=f"edit_button_{message_id}"
     ))
 
     keyboard.add(InlineKeyboardButton(
@@ -100,6 +95,16 @@ async def reply_menu_capcha():
     keyboard = InlineKeyboardBuilder()
     msgs = await get_kb_capcha()
     
+    ##  Получаем количество капч
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    current_id = await cursor.execute('SELECT max(id) FROM capcha_kb')
+    current_id = await cursor.fetchone()
+    msg_timer = await cursor.execute('SELECT timer FROM capcha_kb WHERE id=1')
+    msg_timer = await cursor.fetchone()
+    await connect.commit()
+
+
     for msg_tuple in msgs:
         # msg_tuple - это кортеж (1,), извлекаем первый элемент
         msg_id = msg_tuple[0]
@@ -110,20 +115,29 @@ async def reply_menu_capcha():
         ))
 
         keyboard.add(InlineKeyboardButton(
+            text=f"{msg_timer[0]}s ⏳ Time",
+            callback_data=f"capcha_timer_{msg_id}"
+        ))
+
+        keyboard.add(InlineKeyboardButton(
             text="🗑️ Удалить",
             callback_data=f"capcha_delete_{msg_id}"
         ))
-        
-    keyboard.add(InlineKeyboardButton(
+
+    if current_id is None or current_id[0] is None:
+        keyboard.add(InlineKeyboardButton(
         text="➕ Добавить",
         callback_data="capcha_add_message"
     ))
+    else:
+        pass
+    
     keyboard.add(InlineKeyboardButton(
         text="🔙 Назад",
-        callback_data="capcha_message"
+        callback_data="back_to_admin"
     ))
 
-    return keyboard.adjust(2).as_markup()
+    return keyboard.adjust(3).as_markup()
 
 async def capcha_edit_menu(message_id):
     keyboard = InlineKeyboardBuilder()
@@ -139,8 +153,8 @@ async def capcha_edit_menu(message_id):
     ))
 
     keyboard.add(InlineKeyboardButton(
-        text="📝 Изменить имя кнопки",
-        callback_data=f"capcha_edit_button_name_{message_id}"
+        text="🔘 Изменить кнопку",
+        callback_data=f"capcha_edit_button_{message_id}"
     ))
 
     keyboard.add(InlineKeyboardButton(

@@ -271,6 +271,7 @@ async def admin_news_message(message: types.Message, state: FSMContext):
         'video': message.video.file_id if message.video else None,
         'reply_markup': message.reply_markup.model_dump_json() if message.reply_markup else None
     }
+    # print(message_data['reply_markup'])
     for user in users:
             try:
                 reply_markup = None
@@ -293,6 +294,7 @@ async def admin_news_message(message: types.Message, state: FSMContext):
                         reply_markup=reply_markup,
                         parse_mode="HTML"
                     )
+                    print(reply_markup)
                 else:
                     # Обычное текстовое сообщение
                     await bot.send_message(
