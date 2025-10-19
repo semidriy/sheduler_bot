@@ -87,11 +87,6 @@ async def call_first_start(message: types.Message, state: FSMContext) -> None:
     button_name = await first_name_button()
     button_name = button_name[0]
 
-    # ДОБАВЬТЕ ОТЛАДОЧНУЮ ИНФОРМАЦИЮ
-    print(f"DEBUG: hello_photo_id = {hello_photo_id}, type = {type(hello_photo_id)}")
-    print(f"DEBUG: hello_video_id = {hello_video_id}, type = {type(hello_video_id)}")
-    print(f"DEBUG: text_hello_db = {text_hello_db}")
-
     # Преобразуем JSON строку в объект клавиатуры
     import json
     try:

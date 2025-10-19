@@ -93,10 +93,6 @@ async def call_last_message_start(message: types.Message) -> None:
     button_name = button_name[0]
     # button_url = await url_button()
     referrer_id = await get_my_referrer(message.chat.id)
-    print('Прожатие после второй кнопки')
-    print(f'Юзер айди - {message.from_user.id}\n'
-          f'message.chat.id - {message.chat.id}'
-          f'реферер айди - {referrer_id}')
     button_url = await url_button_referrer(referrer_id)
     ##
     button_url = button_url[0]
@@ -118,10 +114,10 @@ async def bounty_referr(message: types.Message):
             # обновление поля оплаты
             await update_paid_value(message.chat.id)
             # уведомляем реферала
+            bounty_cashback = await get_bounty_cashback() 
             await bot.send_message(referrer_id, '💰<b>Дзынь</b>💰\n\n'
-                                f'<b>+{min_cashback}₽</b> на ваш баланс 💵', parse_mode="HTML")
+                                f'<b>+{bounty_cashback}₽</b> на ваш баланс 💵', parse_mode="HTML")
             # выплачиваем реферафу
-            bounty_cashback = await get_bounty_cashback()
             paid_value = await get_bounty_sum(referrer_id)
             paid_value = int(paid_value) + int(bounty_cashback)
             await update_bounty_sum_value(paid_value, referrer_id)

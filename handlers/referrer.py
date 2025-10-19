@@ -20,9 +20,25 @@ out_kb = types.InlineKeyboardMarkup(inline_keyboard=cash_out_kb)
 
 router = Router()
 
-@router.message(Command('profile'), IsSubadmin())
+# @router.message(Command('profile'), IsSubadmin())
+# async def profile_menu(message: types.Message) -> None:
+#     await message.answer('Ваш профиль!', reply_markup=subadmin_menu)
+
+@router.message(F.text == 'Меню', IsSubadmin())
 async def profile_menu(message: types.Message) -> None:
-    await message.answer('Ваш профиль!', reply_markup=subadmin_menu)
+    await message.answer('''
+📋 <b>Главное меню</b>
+
+Выберите нужный <b>раздел:</b>
+
+📈 <b>Статистика</b> - Информация о вашей статистике
+                         
+🔗 <b>Реф. ссылка</b> - Информация о реферальной системе
+                         
+💰 <b>Вывод денег</b> - Запрос вывода денег
+                         
+📌 <b>Мои реквизиты</b> - Настройки ваших реквизитов
+''', reply_markup=subadmin_menu)
 
 @router.message(F.text == 'Реф. ссылка 🔗', IsSubadmin())
 async def referral_link(message: types.Message) -> None:

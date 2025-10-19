@@ -38,4 +38,4 @@ async def admin_process_stat(query: types.CallbackQuery):
             await asyncio.sleep(0.3)
     except Exception as e:
         await query.message.answer(f"⚠️ Ошибка: {e}")
-    await query.message.answer('Вернуться назад?', reply_markup=kb_button_back_to_admin)
+    await query.message.answer('Вернуться назад', reply_markup=kb_button_back_to_admin)

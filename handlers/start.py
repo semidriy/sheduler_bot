@@ -1,6 +1,7 @@
 import asyncio
 from aiogram.filters import Command
 from aiogram import Bot, types, Router, F
+from functions.last_start_message import bounty_referr
 from functions.start_message import delete_previous_message
 from services.message_scheduler import message_scheduler
 from aiogram.fsm.state import State, StatesGroup
@@ -20,7 +21,7 @@ async def admin_command(message: types.Message, state: FSMContext) -> None:
 
 async def start_periodic_messages(message: types.Message, state: FSMContext):
     """Запускает периодические сообщения"""
-    user_id = message.from_user.id
+    # user_id = message.from_user.id
     
     # Инициализируем данные состояния
     await state.update_data(
@@ -37,7 +38,7 @@ async def start_periodic_messages(message: types.Message, state: FSMContext):
 
 async def periodic_message_worker(message: types.Message, state: FSMContext):
     """Рабочий процесс для периодической отправки сообщений"""
-    user_id = message.from_user.id
+    # user_id = message.from_user.id
     
     while True:
         await asyncio.sleep(10)
@@ -66,14 +67,10 @@ async def handle_button_press(message: types.Message, state: FSMContext):
     await state.clear()
     
     # Ваша логика обработки нажатия кнопки
-    button_text = message.text
-    await message.answer(f"Вы нажали: {button_text}. Периодические сообщения остановлены.")
+    # button_text = message.text
+    # await message.answer(f"Вы нажали: {button_text}. Периодические сообщения остановлены.")
+    await bounty_referr(message)
 
-# ## Ловим команды /start
-# @router.message(Command('start'))
-# async def admin_command(message: types.Message) -> None:
-#     await call_first_start_sales(message)
-#     await message_scheduler.schedule_welcome_messages(message.from_user.id)
 
 @router.message(Command('delmenu'))
 async def del_main_menu(message: types.Message, bot: Bot):
