@@ -1,6 +1,7 @@
 import asyncio
 from aiogram.filters import Command
 from aiogram import Bot, types, Router, F
+from functions.db_handler import get_capcha_timer
 from functions.last_start_message import bounty_referr
 from functions.start_message import delete_previous_message
 from services.message_scheduler import message_scheduler
@@ -17,6 +18,7 @@ class UserState(StatesGroup):
 @router.message(Command('start'))
 async def admin_command(message: types.Message, state: FSMContext) -> None:
     await state.set_state(UserState.waiting_for_button)
+    await message_scheduler.schedule_welcome_messages(message.from_user.id)
     await start_periodic_messages(message, state)
 
 async def start_periodic_messages(message: types.Message, state: FSMContext):
@@ -38,10 +40,11 @@ async def start_periodic_messages(message: types.Message, state: FSMContext):
 
 async def periodic_message_worker(message: types.Message, state: FSMContext):
     """Рабочий процесс для периодической отправки сообщений"""
-    # user_id = message.from_user.id
-    
+    ##  Получаем время для спама капчи
+    capcha_timer = await get_capcha_timer()
+
     while True:
-        await asyncio.sleep(10)
+        await asyncio.sleep(capcha_timer[0]) 
         
         # Проверяем состояние
         current_state = await state.get_state()
@@ -55,7 +58,6 @@ async def periodic_message_worker(message: types.Message, state: FSMContext):
             
         # Отправляем новое сообщение (предыдущее удалится внутри функции)
         await call_first_start_sales(message, state)
-        await message_scheduler.schedule_welcome_messages(message.from_user.id)
 
 @router.message(UserState.waiting_for_button)
 async def handle_button_press(message: types.Message, state: FSMContext):
@@ -65,10 +67,6 @@ async def handle_button_press(message: types.Message, state: FSMContext):
     # Останавливаем периодические сообщения
     await state.update_data(periodic_task_active=False)
     await state.clear()
-    
-    # Ваша логика обработки нажатия кнопки
-    # button_text = message.text
-    # await message.answer(f"Вы нажали: {button_text}. Периодические сообщения остановлены.")
     await bounty_referr(message)
 
 

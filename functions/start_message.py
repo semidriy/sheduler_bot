@@ -157,7 +157,6 @@ async def delete_previous_message(message: types.Message, state: FSMContext):
                 chat_id=message.chat.id,
                 message_id=last_message_id
             )
-            print(f"Удалили предыдущее сообщение {last_message_id}")
         except Exception as e:
             # Если не получилось удалить (сообщение слишком старое и т.д.)
             print(f"Не удалось удалить сообщение {last_message_id}: {e}")

@@ -334,3 +334,27 @@ async def call_capcha_edit(message_id):
         'video': video,
         'reply_markup': reply_markup
     }
+
+##  Получаем время отправки капчи
+async def get_capcha_timer():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    capcha_timer = await cursor.execute('SELECT timer FROM capcha_kb WHERE id= 1;')
+    capcha_timer = await capcha_timer.fetchone()
+    await cursor.close()
+    await connect.close()
+    if capcha_timer is None:
+        return None
+    return capcha_timer
+
+##  Получаем время отправки приветок
+async def get_privetka_timer():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    privetka_timer = await cursor.execute('SELECT timer FROM msg_kb;')
+    privetka_timer = await privetka_timer.fetchall()
+    await cursor.close()
+    await connect.close()
+    if privetka_timer is None:
+        return None
+    return privetka_timer

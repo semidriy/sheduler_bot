@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery
 import aiosqlite
 import json
 
-from functions.db_handler import call_message_edit
+from functions.db_handler import call_message_edit, get_capcha_timer, get_privetka_timer
 import keyboards.admin_message_kb as kb
 from state_fsm.fsm import AdminState
 from aiogram.fsm.context import FSMContext
@@ -290,22 +290,30 @@ async def edit_message_handler(query: types.CallbackQuery, state: FSMContext):
 
 @router.message(AdminState.fms_message_timer)
 async def process_media_put(message: types.Message, state: FSMContext):
-    connect = await aiosqlite.connect('bot.db')
-    cursor = await connect.cursor()
-    data = await state.get_data()
-    message_id = data.get('message_id')
-    new_timer = message.text
-    connect = await aiosqlite.connect('bot.db')
-    cursor = await connect.cursor()
-    process_timer_put = await cursor.execute('UPDATE msg_kb SET timer = ? WHERE id=?', (new_timer, message_id, ))
-    await connect.commit()
-    process_timer_put = await process_timer_put.fetchone()
-    await cursor.close()
-    await connect.close()
-    await message.answer(f"✅ Таймер для  {message_id}-ого приветственного сообщения изменен\n"
+    ##  Получаем время капчи/приветки и сравниваем с вводимым временем
+    capcha_timer = await get_capcha_timer()
+    privetka_timer = await get_privetka_timer()
+    timer_values = [item[0] for item in privetka_timer]
+    if int(capcha_timer[0]) == int(message.text) or int(message.text) in timer_values:
+        await message.answer(f'❌ Данное время уже установлено для CAPCHA({capcha_timer[0]}s) или приветки({timer_values}s)\n' \
+                             '👀 Введите новое время')
+    else:
+        connect = await aiosqlite.connect('bot.db')
+        cursor = await connect.cursor()
+        data = await state.get_data()
+        message_id = data.get('message_id')
+        new_timer = message.text
+        connect = await aiosqlite.connect('bot.db')
+        cursor = await connect.cursor()
+        process_timer_put = await cursor.execute('UPDATE msg_kb SET timer = ? WHERE id=?', (new_timer, message_id, ))
+        await connect.commit()
+        process_timer_put = await process_timer_put.fetchone()
+        await cursor.close()
+        await connect.close()
+        await message.answer(f"✅ Таймер для  {message_id}-ого приветственного сообщения изменен\n"
                          f"Текущее значение {new_timer} секунд\n\n"
                          '⚙️ Меню сообщений', reply_markup=await kb.reply_menu())
-    await state.clear()
+        await state.clear()
     
 ##  Добавление целого поста
 @router.callback_query(F.data == 'add_message')
