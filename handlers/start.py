@@ -1,6 +1,7 @@
 import asyncio
 from aiogram.filters import Command
 from aiogram import Bot, types, Router, F
+from functions.start_message import delete_previous_message
 from services.message_scheduler import message_scheduler
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -21,11 +22,15 @@ async def start_periodic_messages(message: types.Message, state: FSMContext):
     """Запускает периодические сообщения"""
     user_id = message.from_user.id
     
-    # Сохраняем информацию о задаче
-    await state.update_data(periodic_task_active=True)
+    # Инициализируем данные состояния
+    await state.update_data(
+        periodic_task_active=True,
+        last_message_id=None,  # ID последнего отправленного сообщения
+        message_count=0  # Счетчик отправленных сообщений
+    )
     
     # Отправляем первое сообщение
-    await call_first_start_sales(message)
+    await call_first_start_sales(message, state)  # Передаем state
     
     # Запускаем периодическую отправку
     asyncio.create_task(periodic_message_worker(message, state))
@@ -47,13 +52,15 @@ async def periodic_message_worker(message: types.Message, state: FSMContext):
         if not data.get('periodic_task_active', True):
             break
             
-        # Отправляем сообщение
-        await call_first_start_sales(message)
+        # Отправляем новое сообщение (предыдущее удалится внутри функции)
+        await call_first_start_sales(message, state)
         await message_scheduler.schedule_welcome_messages(message.from_user.id)
 
-# Обработчик нажатия кнопки
 @router.message(UserState.waiting_for_button)
 async def handle_button_press(message: types.Message, state: FSMContext):
+    # Удаляем последнее периодическое сообщение перед отправкой ответа
+    await delete_previous_message(message, state)
+    
     # Останавливаем периодические сообщения
     await state.update_data(periodic_task_active=False)
     await state.clear()
