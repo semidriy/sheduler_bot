@@ -100,7 +100,7 @@ async def edit_menu(message_id):
     return keyboard.adjust(1).as_markup()
 
 ##  Клавиатура для саб-админ
-async def subadmin_kb():
+async def stat_subadmin_kb():
     keyboard = InlineKeyboardBuilder()
     msgs = await get_all_id_subadmin()
     

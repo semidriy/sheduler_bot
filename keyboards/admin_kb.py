@@ -1,5 +1,9 @@
 from aiogram import types
 from config_data.config import Config, load_config
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton
+
+from keyboards.admin_message_kb import get_all_id_subadmin
 
 config: Config = load_config()
 admin_link=config.tg_bot.admin_link
@@ -82,3 +86,18 @@ edit_cashback = [
     [types.InlineKeyboardButton(text='💸 Изменить ОЗР', callback_data='edit_bounty_cashback')],
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')]
 ]
+
+async def subadmin_delete_kb(username):
+    keyboard = InlineKeyboardBuilder()
+
+    keyboard.add(InlineKeyboardButton(
+        text=f"❌ Удалить",
+        callback_data=f"delete_sub_{username}"
+    ))
+        
+    keyboard.add(InlineKeyboardButton(
+        text="🔙 Назад",
+        callback_data="admin_stat"
+    ))
+
+    return keyboard.adjust(1).as_markup()
