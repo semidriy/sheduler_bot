@@ -26,7 +26,6 @@ subadmin_kb = [
         types.InlineKeyboardButton(text='➕ Выдать права', callback_data='grant_subadmin_profile'),
         types.InlineKeyboardButton(text='➖ Удалить админа', callback_data='grant_down_subadmin_profile')
     ],
-    [types.InlineKeyboardButton(text='🔗 Изменить ссылку', callback_data='edit_bounty_link')],
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')],
 ]
 
