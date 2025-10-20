@@ -18,12 +18,12 @@ async def admin_hello_message(query: types.CallbackQuery):
 
 @router.callback_query(F.data == 'grant_subadmin_profile', IsAdmin())
 async def process_add_subadmin(query: types.CallbackQuery, state: FSMContext):
-    await query.message.edit_text('👀 Введите USERNAME пользователя без @ для добавление в группу саб-админов', reply_markup=kb_button_back_subadmin)
+    await query.message.edit_text('👀 Введите <b>USERNAME</b> пользователя c @ для добавление в группу <b>саб-админов</b>', reply_markup=kb_button_back_subadmin)
     await state.set_state(AdminState.fsm_add_subadmin)
 
 @router.message(AdminState.fsm_add_subadmin)
 async def add_subadmin(message:types.Message, state:FSMContext):
-    username = message.text
+    username = message.text[1:]  ##  Убираем @
     subadmin_group_id = await get_group_id_subadmin(username)
     if subadmin_group_id == 3:
         await put_group_id_subadmin(username)
