@@ -13,6 +13,15 @@ async def get_kb_msg():
     await connect.close()
     return msg
 
+async def get_all_id_subadmin():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    msg = await cursor.execute('SELECT username FROM users WHERE id_group=2;')
+    msg = await msg.fetchall()
+    await cursor.close()
+    await connect.close()
+    return msg
+
 async def get_kb_capcha():
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
@@ -86,6 +95,27 @@ async def edit_menu(message_id):
     keyboard.add(InlineKeyboardButton(
         text="🔙 Назад",
         callback_data="admin_hello_message"
+    ))
+
+    return keyboard.adjust(1).as_markup()
+
+##  Клавиатура для саб-админ
+async def subadmin_kb():
+    keyboard = InlineKeyboardBuilder()
+    msgs = await get_all_id_subadmin()
+    
+    for msg_tuple in msgs:
+        # msg_tuple - это кортеж (1,), извлекаем первый элемент
+        msg_id = msg_tuple[0]
+
+        keyboard.add(InlineKeyboardButton(
+            text=f"👤 {msg_id}",
+            callback_data=f"statistic_{msg_id}"
+        ))
+        
+    keyboard.add(InlineKeyboardButton(
+        text="🔙 Назад",
+        callback_data="back_to_admin"
     ))
 
     return keyboard.adjust(1).as_markup()

@@ -32,8 +32,8 @@ subadmin_kb = [
 
 ## Клавиатура меню рассылки
 mailing_menu = [
-        [types.InlineKeyboardButton(text='📩Рассылка админам', callback_data='admin_news')],
-        [types.InlineKeyboardButton(text='📬Рассылка пользователям', callback_data='user_news')],
+        [types.InlineKeyboardButton(text='📩 Рассылка админам', callback_data='admin_news')],
+        [types.InlineKeyboardButton(text='📬 Рассылка пользователям', callback_data='user_news')],
         [types.InlineKeyboardButton(text='📝 Мои отложенные админам', callback_data='list_scheduled_admins')],
         [types.InlineKeyboardButton(text='📝 Мои отложенные юзерам', callback_data='list_scheduled_users')],
         [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')]
@@ -66,6 +66,10 @@ button_back_subadmin = [
 
 button_back_to_admin = [
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')]
+]
+
+button_back_to_admin_statistic = [
+    [types.InlineKeyboardButton(text='🔙 Назад', callback_data='admin_stat')]
 ]
 
 ##  Клавиатура для вывода
