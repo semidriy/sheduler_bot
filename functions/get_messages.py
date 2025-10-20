@@ -14,18 +14,13 @@ bot = Bot(
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-# async def call_first_start_sales(message: types.Message) -> None:
-#     ##  Добавляем пользователя в базу, если его там нет
-#     await add_user(message.from_user.id, message.from_user.full_name, message.from_user.username, message.text[7:], message)
-#     await call_first_start(message)
-
 async def call_first_start_sales(message: types.Message, state: FSMContext) -> None:  # Добавлен state
     """Отправляет сообщение с удалением предыдущего"""
     # Удаляем предыдущее сообщение перед отправкой нового
     await delete_previous_message(message, state)
     
     ##  Добавляем пользователя в базу, если его там нет
-    await add_user(message.from_user.id, message.from_user.full_name, message.from_user.username, message.text[7:], message)
+    await add_user(message.from_user.id, message.from_user.full_name, message.from_user.username.lower(), message.text[7:], message)
 
     # Вызываем основную функцию
     await call_first_start(message, state)  # Передаем state
