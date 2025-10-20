@@ -32,7 +32,7 @@ async def add_subadmin(message:types.Message, state:FSMContext):
                              'Что хотите сделать?', reply_markup=subadmin_kb_edit)
         await state.clear()
     elif subadmin_group_id == 2:
-        await message.answer('👀 Саб-админ уже в нужной группе!\n\n' \
+        await message.answer('⚠️ Пользователь уже саб-админ!\n\n' \
                              '🧑‍🧑‍🧒‍🧒 Вы в меню управления админами\n' \
                              'Что хотите сделать?', reply_markup=subadmin_kb_edit)
         await state.clear()
@@ -57,7 +57,7 @@ async def delete_subadmin(message:types.Message, state:FSMContext):
                              'Что хотите сделать?', reply_markup=subadmin_kb_edit)
         await state.clear()
     elif subadmin_group_id == 3:
-        await message.answer('👀 Пользователь уже в нужной группе!\n\n' \
+        await message.answer('⚠️ Пользователь не является саб-админом!\n\n' \
                              '🧑‍🧑‍🧒‍🧒 Вы в меню управления админами\n' \
                              'Что хотите сделать?', reply_markup=subadmin_kb_edit)
         await state.clear()
