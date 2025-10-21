@@ -34,14 +34,23 @@ async def get_referrer_user_id(user_id):
     return referrer_id
 
 ##  Функция проверки реквизитов
-async def get_referrer_wallet(user_id):
+async def get_referrer_trc(user_id):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    wallet_id = await cursor.execute('SELECT COALESCE(wallet_id, 0) FROM users WHERE user_id=?', (user_id,))
-    wallet_id = await wallet_id.fetchone()
+    trc_id = await cursor.execute('SELECT COALESCE(trc_id, 0) FROM users WHERE user_id=?', (user_id,))
+    trc_id = await trc_id.fetchone()
     await cursor.close()
     await connect.close()
-    return wallet_id[0]
+    return trc_id[0]
+
+async def get_referrer_bep(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bep_id = await cursor.execute('SELECT COALESCE(bep_id, 0) FROM users WHERE user_id=?', (user_id,))
+    bep_id = await bep_id.fetchone()
+    await cursor.close()
+    await connect.close()
+    return bep_id[0]
 
 ##  Функция проверки суммы реферала для выплаты
 async def get_referrer_bounty_sum(user_id):
@@ -233,18 +242,6 @@ async def get_admin_current_cashback(username):
     if current_cashback is None:
         return None
     return current_cashback[0]
-
-##  Получаем реферальную ссылку админа
-async def get_admin_referal_link(username):
-    connect = await aiosqlite.connect('bot.db')
-    cursor = await connect.cursor()
-    referal_link = await cursor.execute('SELECT link FROM users WHERE username= ?;', (username,))
-    referal_link = await referal_link.fetchone()
-    await cursor.close()
-    await connect.close()
-    if referal_link is None:
-        return None
-    return referal_link[0]
 
 ##  Просмотр и редактирование сообщений
 async def call_message_edit(message_id):

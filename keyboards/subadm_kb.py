@@ -13,10 +13,12 @@ subadmin_menu = ReplyKeyboardMarkup(
     resize_keyboard=True
     # one_time_keyboard=True
 )
-btn_wallet_1 = KeyboardButton(text='Изменить ✏️')
-btn_wallet_2 = KeyboardButton(text='Назад 🔙')
+btn_wallet_1 = KeyboardButton(text='Изменить TRC20 💸')
+btn_wallet_2 = KeyboardButton(text='Изменить BEP20 💳')
+btn_wallet_3 = KeyboardButton(text='Назад 🔙')
 
 wallet_kb = ReplyKeyboardMarkup(
-    keyboard=[[btn_wallet_1, btn_wallet_2]],
+    keyboard=[[btn_wallet_1, btn_wallet_2],
+              [btn_wallet_3]],
     resize_keyboard=True
 )

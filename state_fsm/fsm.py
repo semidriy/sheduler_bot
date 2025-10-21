@@ -34,7 +34,8 @@ class AdminState(StatesGroup):
 
 class SubAdminState(StatesGroup):
     ##  Для кошелька
-    fsm_wallet_id = State()
+    fsm_wallet_trc_id = State()
+    fsm_wallet_bep_id = State()
 
 ##  Рассылка
 class ScheduleStates(StatesGroup):

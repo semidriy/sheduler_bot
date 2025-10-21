@@ -3,7 +3,7 @@ from aiogram import types, F, Router
 import keyboards.admin_message_kb as kboard
 import keyboards.admin_kb as kb
 
-from functions.db_handler import del_groupid_subadmin, get_admin_count_referal, get_admin_current_cashback, get_admin_referal_link, get_all_admin_count_referal, get_bounty_cashback
+from functions.db_handler import del_groupid_subadmin, get_admin_count_referal, get_admin_current_cashback, get_bounty_cashback
 from is_admin.isadmin import IsAdmin
 from keyboards.admin_kb import button_back_to_admin_statistic
 
@@ -22,12 +22,12 @@ async def edit_message_handler(query: types.CallbackQuery):
         username = query.data[10:]
         #  Получаем статистику
         bounty_cashback = await get_bounty_cashback()
-        referal_link = await get_admin_referal_link(username)
+        # referal_link = await get_admin_referal_link(username)
         count_referal = await get_admin_count_referal(username)
         count_bounty_cashback = count_referal * bounty_cashback
         current_cashback = await get_admin_current_cashback(username)
         await query.message.edit_text(f'👤 @{username}\n\n' \
-                                       f'Его реферальная ссылка:\n {referal_link}\n\n'
+                                    #    f'Его реферальная ссылка:\n {referal_link}\n\n'
                                        '📈 Его статистика:\n\n'
                                        f'┌ Приглашенные пользователи: {count_referal}\n'
                                        f'├ Доход за все время: {count_bounty_cashback}₽\n'
