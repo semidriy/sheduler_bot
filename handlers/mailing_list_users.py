@@ -55,7 +55,7 @@ async def schedule_message(message: types.Message, state: FSMContext):
     }
 
     await state.update_data(message_data=message_data)
-    await message.answer("👀 Теперь введите время отправки в формате: ДД ММ ЧЧ ММ\n(день месяц часы минуты, например: 25 12 15 30)\n\n" \
+    await message.answer("👀 Теперь введите время отправки в формате: ЧЧ ММ ДД ММ\n(часы минуты день месяц, например: 12 00 31 12)\n\n" \
                                   'Или нажмите кнопку выхода в главное меню',
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text="↩️ Отмена", callback_data="news")]]))
@@ -64,7 +64,7 @@ async def schedule_message(message: types.Message, state: FSMContext):
 async def process_schedule_time(message: types.Message, state: FSMContext):
     try:
         # Парсим дату и время
-        day, month, hour, minute = map(int, message.text.split())
+        hour, minute, day, month = map(int, message.text.split())
         
         now = datetime.now()
         schedule_time = datetime(now.year, month, day, hour, minute)
