@@ -4,7 +4,7 @@ from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 import aiosqlite
 
-from functions.db_handler import get_bounty_cashback, get_count_referal, get_current_cashback, get_min_cashback, get_referrer_bep, get_referrer_bounty_sum, get_referrer_trc, get_username_for_bouynt
+from functions.db_handler import get_bounty_cashback, get_bounty_sum_to_paid, get_count_referal, get_current_cashback, get_min_cashback, get_referrer_bep, get_referrer_bounty_sum, get_referrer_trc, get_username_for_bouynt, update_bounty_sum_to_paid
 from state_fsm.fsm import SubAdminState
 from is_admin.isadmin import IsSubadmin
 from keyboards.subadm_kb import subadmin_menu, wallet_kb
@@ -34,6 +34,8 @@ async def profile_menu(message: types.Message) -> None:
 💰 <b>Вывод денег</b> - Запрос вывода денег
                          
 📌 <b>Мои реквизиты</b> - Настройки ваших реквизитов
+                         
+⚠️⚠️⚠️ Обязательно перейди в 📌 <b>Мои реквизиты</b> и заполни данные кошельков
 ''', reply_markup=subadmin_menu)
 
 @router.message(F.text == 'Реф. ссылка 🔗', IsSubadmin())
@@ -62,32 +64,44 @@ async def cash_output(message: types.Message) -> None:
     min_cashback = await get_min_cashback()
     bounty_sum = await get_referrer_bounty_sum(message.from_user.id)
     trc_id = await get_referrer_trc(message.from_user.id)
-    ##  Клавиатура обнуления баланса
-    kb_reset_bounty_sum = [
-        [types.InlineKeyboardButton(text='Обнулить', callback_data=f'clear_balance:{message.from_user.id}')]
-    ]
-    kb_balance = types.InlineKeyboardMarkup(inline_keyboard=kb_reset_bounty_sum)
-    if int(bounty_sum) >= int(min_cashback):
-        if message.from_user.username != None:
-            await message.answer('Заявка на вывод денег отправлена💰\n\n'
+    bep_id = await get_referrer_bep(message.from_user.id)
+    bounty_sum_to_paid = await get_bounty_sum_to_paid(message.from_user.id)
+    ##  Проверяем выплачена ли прошлая заявка: 0 выплачена, отличная сумма от 0 не выплачено
+    if bounty_sum_to_paid == 0:
+        await update_bounty_sum_to_paid(bounty_sum, message.from_user.id)
+        ##  Клавиатура обнуления баланса
+        kb_reset_bounty_sum = [
+            [types.InlineKeyboardButton(text='Обнулить', callback_data=f'clear_balance:{message.from_user.id}')]
+        ]
+        kb_balance = types.InlineKeyboardMarkup(inline_keyboard=kb_reset_bounty_sum)
+        if int(bounty_sum) >= int(min_cashback):
+            if message.from_user.username != None:
+                await message.answer('Заявка на вывод денег отправлена💰\n\n'
                                 f'💰 Сумма к выплате <b>{bounty_sum}₽</b>\n'
                                  'Можете дождаться пока с вами свяжутся или открыть диалог самостоятельно\n'
                                  '                                ↘️ ⬇️ ↙️', reply_markup=out_kb, parse_mode="HTML")
-            for admin_id in admin_ids:
-                await bot.send_message(admin_id, '⚠️ У вас <b>новая заявка</b> от пользователя\n\n'
+                await update_bounty_sum_to_paid(bounty_sum, message.from_user.id)
+                for admin_id in admin_ids:
+                    await bot.send_message(admin_id, '⚠️ У вас <b>новая заявка</b> от пользователя\n\n'
                                f'👤 Его ссылка @{message.from_user.username}\n'
-                               '📌 Его реквизиты \n\n'
+                               '📌 Его реквизиты TRC20\n'
                                f'<code>{trc_id}</code>\n\n'
+                               '_________________________\n'
+                               '📌 Его реквизиты BEP20\n'
+                               f'<code>{bep_id}</code>\n\n'
                                f'💰 Сумма к выплате {bounty_sum}₽', parse_mode="HTML", reply_markup=kb_balance)
-        else:
-            await message.answer('Вы запросили <b>вывод денег</b> 💰\n'
+            else:
+                await message.answer('Вы запросили <b>вывод денег</b> 💰\n'
                                  'К сожалению у вас отсутствует <b>юзернейм</b> и мы не можем связаться с вами самостоятельно😔\n'
                                  'Пожалуйста воспользуйтесь кнопкой для связи напрямую и вывода средств\n'
                                  'Не забудьте указать адрес вашего кошелька в сети TRC20 или BEP20'
                                  '                                ↘️ ⬇️ ↙️', reply_markup=out_kb, parse_mode="HTML")
-    else:
-        await message.answer(f'💰 <b>Ваш баланс {bounty_sum}₽</b>\n\n' \
+                await update_bounty_sum_to_paid(bounty_sum, message.from_user.id)
+        else:
+            await message.answer(f'💰 <b>Ваш баланс {bounty_sum}₽</b>\n\n' \
                              f'❌ Баланс для вывода должен быть <b>больше {min_cashback}₽</b>', reply_markup=subadmin_menu, parse_mode="HTML")
+    else:
+        await message.answer('❌ Прошлая заявка на вывод еще не обработана!\n Дождитесь ее обработки..')
 
 @router.callback_query(F.data.startswith('clear_balance'))
 async def process_hello_text(query: types.CallbackQuery):
@@ -97,24 +111,30 @@ async def process_hello_text(query: types.CallbackQuery):
     username = await get_username_for_bouynt(user_id)
     ##  Получаем его реквизиты и баланс
     trc_id = await get_referrer_trc(user_id)
-    bounty_sum = await get_referrer_bounty_sum(user_id)
-
+    bep_id = await get_referrer_bep(user_id)
+    bounty_sum = await get_bounty_sum_to_paid(user_id)
+    current_balance = await get_current_cashback(user_id)
+    bounty = int(current_balance)-int(bounty_sum)
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    sql = await cursor.execute('UPDATE users SET bounty_sum = 0 WHERE user_id=?', (user_id,))
+    await cursor.execute('UPDATE users SET bounty_sum = ? WHERE user_id=?', (bounty, user_id,))
+    await cursor.execute('UPDATE users SET bounty_sum_to_paid = 0 WHERE user_id=?', (user_id,))
     await connect.commit()
-    sql = await sql.fetchone()
     await cursor.close()
     await connect.close()
-    await query.message.edit_text('✅ Заявка выполнена\n\n'
+    await query.message.edit_text('✅ <b>Заявка выполнена</b>\n\n'
                                f'👤 Его ссылка @{username}\n'
-                               '📌 Его реквизиты \n\n'
+                               '📌 Его реквизиты TRC20\n'
                                f'<code>{trc_id}</code>\n\n'
-                               f'💰 Сумма к выводу была равна {bounty_sum}₽', parse_mode="HTML")
+                               '_________________________\n'
+                               '📌 Его реквизиты BEP20\n'
+                               f'<code>{bep_id}</code>\n\n'
+                               f'💰 Сумма к выводу была равна {bounty_sum}₽\n'
+                               f'💳 Текущий баланс саб-админа {bounty}₽', parse_mode="HTML")
 
     await bot.send_message(user_id, 'Администратор <b>обнулил</b> ваш баланс ✅\n\n'
-                                    'Деньги на счет придут <b>в течении 5-15 минут</b>'
-                                    'Спасибо что выбрали <b>наш сервис</b> 🥳')
+                                    'Деньги на счет придут <b>в течении 5-15 минут</b>\n'
+                                    'Спасибо что выбрали <b>наш сервис</b> 🥳', parse_mode="HTML")
 
 @router.message(F.text == 'Мои реквизиты 📌', IsSubadmin())
 async def subadm_wallet(message: types.Message) -> None:

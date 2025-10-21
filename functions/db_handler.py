@@ -169,7 +169,27 @@ async def get_current_cashback(user_id):
         return None
     return current_cashback[0]
 
-##  Проверяем была ли выплата
+##  Фиксируем сумму к выплате
+async def update_bounty_sum_to_paid(bounty_sum_to_paid, user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bounty_sum_to_paid = await cursor.execute('UPDATE users SET bounty_sum_to_paid = ? WHERE user_id=?', (bounty_sum_to_paid, user_id,))
+    await connect.commit()
+    bounty_sum_to_paid = await bounty_sum_to_paid.fetchone()
+    await cursor.close()
+    await connect.close()
+
+##  
+async def get_bounty_sum_to_paid(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bounty_sum_to_paid = await cursor.execute('SELECT bounty_sum_to_paid FROM users WHERE user_id=?', (user_id,))
+    bounty_sum_to_paid = await bounty_sum_to_paid.fetchone()
+    await cursor.close()
+    await connect.close()
+    return bounty_sum_to_paid[0]
+
+##  Проверяем была ли выплата за реферала
 async def get_paid_value(user_id):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
