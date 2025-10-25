@@ -7,7 +7,7 @@ import aiosqlite
 from functions.db_handler import get_bounty_cashback, get_bounty_sum_to_paid, get_count_referal, get_current_cashback, get_min_cashback, get_referrer_bep, get_referrer_bounty_sum, get_referrer_trc, get_username_for_bouynt, update_bounty_sum_to_paid
 from state_fsm.fsm import SubAdminState
 from is_admin.isadmin import IsSubadmin
-from keyboards.subadm_kb import subadmin_menu, wallet_kb
+from keyboards.subadm_kb import subadmin_menu, wallet_kb, balance_menu
 from keyboards.admin_kb import cash_out_kb
 from config_data.config import Config, load_config
 
@@ -31,7 +31,7 @@ async def profile_menu(message: types.Message) -> None:
                          
 🔗 <b>Реф. ссылка</b> - Информация о реферальной системе
                          
-💰 <b>Вывод денег</b> - Запрос вывода денег
+💳 <b>Баланс</b> - Показать баланс и сделать запрос вывода денег
                          
 📌 <b>Мои реквизиты</b> - Настройки ваших реквизитов
                          
@@ -57,6 +57,18 @@ async def statistic(message: types.Message) -> None:
                         f'├ Доход за все время: <b>{count_bounty_cashback}₽</b>\n'
                         f'└ Доступно к выводу: <b>{current_cashback}₽</b>\n\n'
                         f'⚠️ Минимальная суммы вывода составляет <b>{min_cashback}₽</b>', parse_mode="HTML")
+
+@router.message(F.text == 'Баланс 💳', IsSubadmin())
+async def cash_output(message: types.Message) -> None:
+    bounty_sum = await get_referrer_bounty_sum(message.from_user.id)
+    min_cashback = await get_min_cashback()
+    await message.answer(f'''
+💸💸💸 <b>Твой баланс {bounty_sum}₽</b>
+
+⚠️ Чтобы вывести деньги необходимо иметь на балансе {min_cashback}₽
+
+Для вывода средств нажми на кнопку <b>Вывод денег 💰</b>
+''', reply_markup=balance_menu)
 
 @router.message(F.text == 'Вывод денег 💰', IsSubadmin())
 async def cash_output(message: types.Message) -> None:
@@ -101,7 +113,7 @@ async def cash_output(message: types.Message) -> None:
             await message.answer(f'💰 <b>Ваш баланс {bounty_sum}₽</b>\n\n' \
                              f'❌ Баланс для вывода должен быть <b>больше {min_cashback}₽</b>', reply_markup=subadmin_menu, parse_mode="HTML")
     else:
-        await message.answer('❌ Прошлая заявка на вывод еще не обработана!\n Дождитесь ее обработки..')
+        await message.answer('❌ Прошлая заявка на вывод еще не обработана!\n Дождитесь ее обработки..', reply_markup=subadmin_menu, parse_mode="HTML")
 
 @router.callback_query(F.data.startswith('clear_balance'))
 async def process_hello_text(query: types.CallbackQuery):
@@ -184,4 +196,19 @@ async def edit_wallet_id(message:types.Message, state:FSMContext):
 
 @router.message(F.text == 'Назад 🔙', IsSubadmin())
 async def process_back_to_menu(message: types.Message):
-    await message.answer('Ваш профиль!', reply_markup=subadmin_menu)
+    # await message.answer('Ваш профиль!', reply_markup=subadmin_menu)
+        await message.answer('''
+📋 <b>Главное меню</b>
+
+Выберите нужный <b>раздел:</b>
+
+📈 <b>Статистика</b> - Информация о вашей статистике
+                         
+🔗 <b>Реф. ссылка</b> - Информация о реферальной системе
+                         
+💳 <b>Баланс</b> - Показать баланс и сделать запрос вывода денег
+                         
+📌 <b>Мои реквизиты</b> - Настройки ваших реквизитов
+                         
+⚠️⚠️⚠️ Обязательно перейди в 📌 <b>Мои реквизиты</b> и заполни данные кошельков
+''', reply_markup=subadmin_menu)

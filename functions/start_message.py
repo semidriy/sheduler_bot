@@ -26,10 +26,6 @@ async def add_user(user_id, full_name, username, referrer_id, message: types.Mes
             if str(referrer_id) != str(message.from_user.id):
                 await cursor.execute('INSERT INTO users (user_id, full_name, username, referrer_id) VALUES (?, ?, ?, ?)', (user_id, full_name, username, referrer_id))
                 await connect.commit()
-                # try:
-                #     await bot.send_message(referrer_id, "По вашей ссылке зарегистрировались ")
-                # except:
-                #     pass
             else:
                 await bot.send_message(message.from_user.id, '❌ Нельзя регистрироваться по своей ссылке!')
         else:
@@ -37,7 +33,6 @@ async def add_user(user_id, full_name, username, referrer_id, message: types.Mes
             await connect.commit()
     else:
         pass
-        # await message.answer('Вы уже зарегистрированы')
     await cursor.close()
     await connect.close()
 
