@@ -375,3 +375,83 @@ async def get_privetka_timer():
     if privetka_timer is None:
         return None
     return privetka_timer
+
+####  STATISTIC BD   ####
+
+## Количество всех пользователей
+async def get_sum_users():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    users = await cursor.execute('SELECT COUNT(*) FROM users WHERE id_group=3;')
+    users = await users.fetchone()
+    await cursor.close()
+    await connect.close()
+    if users is None:
+        return None
+    return users[0]
+
+## Количество мертвых пользователей
+async def get_sum_users_dead():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    dead_users = await cursor.execute('SELECT COUNT(*) FROM users WHERE id_group=3 AND dead=1;')
+    dead_users = await dead_users.fetchone()
+    await cursor.close()
+    await connect.close()
+    if dead_users is None:
+        return None
+    return dead_users[0]
+
+## Количество живых пользователей
+async def get_sum_users_alive():
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    alive_users = await cursor.execute('SELECT COUNT(*) FROM users WHERE id_group=3 AND dead=0;')
+    alive_users = await alive_users.fetchone()
+    await cursor.close()
+    await connect.close()
+    if alive_users is None:
+        return None
+    return alive_users[0]
+
+## Проставляем статус живого человека
+async def update_users_alive(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    await cursor.execute('UPDATE users SET dead = 0 WHERE user_id=?;', (user_id,))
+    await connect.commit()
+    await cursor.close()
+    await connect.close()
+
+## Проставляем статус капча пройдена
+async def update_users_capcha(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    await cursor.execute('UPDATE users SET capcha = 1 WHERE user_id=?;', (user_id,))
+    await connect.commit()
+    await cursor.close()
+    await connect.close()
+
+## Количество не пройденных капчу ПО САБАДМИНУ
+async def get_sum_users_dead_referal(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    dead_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 1 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
+    dead_users = await dead_users.fetchone()
+    await cursor.close()
+    await connect.close()
+    if dead_users is None:
+        return None
+    return dead_users[0]
+
+## Количество пройденных капчу ПО САБАДМИНУ
+async def get_sum_users_alive_referal(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    alive_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 0 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
+    alive_users = await alive_users.fetchone()
+    await cursor.close()
+    await connect.close()
+    if alive_users is None:
+        return None
+    return alive_users[0]

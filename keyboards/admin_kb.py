@@ -3,7 +3,7 @@ from config_data.config import Config, load_config
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton
 
-from keyboards.admin_message_kb import get_all_id_subadmin
+# from keyboards.admin_message_kb import get_all_id_subadmin
 
 config: Config = load_config()
 admin_link=config.tg_bot.admin_link
@@ -16,7 +16,7 @@ admin_kb = [
     ],
     [
         types.InlineKeyboardButton(text='📮 Рассылка', callback_data='news'),
-        types.InlineKeyboardButton(text='📊 Статистика', callback_data='admin_stat')
+        types.InlineKeyboardButton(text='🏘️ Статистика БД', callback_data='bd_stat')
     ],
     [
         types.InlineKeyboardButton(text='💰 Выплата', callback_data='cashback'),
@@ -30,6 +30,7 @@ subadmin_kb = [
         types.InlineKeyboardButton(text='➕ Выдать права', callback_data='grant_subadmin_profile'),
         types.InlineKeyboardButton(text='➖ Удалить админа', callback_data='grant_down_subadmin_profile')
     ],
+    [types.InlineKeyboardButton(text='📊 Статистика', callback_data='admin_stat')],
     [types.InlineKeyboardButton(text='🔙 Назад', callback_data='back_to_admin')],
 ]
 

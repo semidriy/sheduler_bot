@@ -25,6 +25,7 @@ async def add_user(user_id, full_name, username, referrer_id, message: types.Mes
         if referrer_id != "":
             if str(referrer_id) != str(message.from_user.id):
                 await cursor.execute('INSERT INTO users (user_id, full_name, username, referrer_id) VALUES (?, ?, ?, ?)', (user_id, full_name, username, referrer_id))
+                await cursor.execute('UPDATE users SET count_ref = count_ref + 1 WHERE user_id = ?', (referrer_id, ))
                 await connect.commit()
             else:
                 await bot.send_message(message.from_user.id, '❌ Нельзя регистрироваться по своей ссылке!')

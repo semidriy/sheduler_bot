@@ -1,7 +1,7 @@
 import asyncio
 from aiogram.filters import Command
 from aiogram import Bot, types, Router, F
-from functions.db_handler import get_capcha_timer
+from functions.db_handler import get_capcha_timer, update_users_alive, update_users_capcha
 from functions.last_start_message import bounty_referr
 from functions.start_message import delete_previous_message
 from services.message_scheduler import message_scheduler
@@ -67,6 +67,9 @@ async def handle_button_press(message: types.Message, state: FSMContext):
     # Останавливаем периодические сообщения
     await state.update_data(periodic_task_active=False)
     await state.clear()
+    ## Проставляем статус живого пользователя
+    await update_users_alive(message.from_user.id)
+    await update_users_capcha(message.from_user.id)
     await bounty_referr(message)
 
 

@@ -115,7 +115,7 @@ async def stat_subadmin_kb():
         
     keyboard.add(InlineKeyboardButton(
         text="🔙 Назад",
-        callback_data="back_to_admin"
+        callback_data="admin_edit"
     ))
 
     return keyboard.adjust(1).as_markup()
