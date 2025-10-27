@@ -22,6 +22,7 @@ class AdminState(StatesGroup):
     ##  Выплаты
     fsm_min_cashback = State()
     fsm_bounty_cashback = State()
+    fsm_ozr_subadmin = State()
     ##  Добавление и удаление сабадминов
     fsm_add_subadmin = State()
     fsm_del_subadmin = State()

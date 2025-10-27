@@ -1,9 +1,11 @@
 import asyncio
+from aiogram.fsm.context import FSMContext
+from state_fsm.fsm import AdminState
 from aiogram import types, F, Router
 import keyboards.admin_message_kb as kboard
 import keyboards.admin_kb as kb
 
-from functions.db_handler import del_groupid_subadmin, get_admin_count_referal, get_admin_current_cashback, get_bounty_cashback, get_sum_users, get_sum_users_alive, get_sum_users_alive_referal, get_sum_users_dead, get_sum_users_dead_referal
+from functions.db_handler import del_groupid_subadmin, get_admin_count_referal, get_admin_current_cashback, get_bounty_cashback, get_sum_users, get_sum_users_alive, get_sum_users_alive_referal, get_sum_users_dead, get_sum_users_dead_referal, put_ozr_subadmin
 from is_admin.isadmin import IsAdmin
 from keyboards.admin_kb import button_back_to_admin_statistic, button_back_to_admin
 
@@ -69,3 +71,27 @@ async def process_delete_subadmin(query: types.CallbackQuery):
     except Exception as e:
         await query.message.answer(f"admin_statistic.process_delete_subadmin | Ошибка при удалении: {e}", show_alert=True)
         print(f"admin_statistic.process_delete_subadmin | Ошибка при удалении: {str(e)}")
+
+@router.callback_query(lambda c: c.data and c.data.startswith('put_ozr_'))
+async def process_put_ozr_subadmin(query: types.CallbackQuery, state: FSMContext):
+    username = query.data[8:]
+    await query.message.edit_text(f'Введите новую сумму ОЗР для саб-админа @{username}', reply_markup=kb_button_back_to_admin_statistic)
+    await state.update_data(username=username)
+    await state.set_state(AdminState.fsm_ozr_subadmin)
+    
+@router.message(AdminState.fsm_ozr_subadmin)
+async def put_ozr_for_subadmin(message: types.Message, state: FSMContext):
+    ozr = message.text
+    data = await state.get_data()
+    username = data.get('username')
+    try:
+        await put_ozr_subadmin(ozr, username)
+        await message.answer(f'✅ Оплата за реферала для саб-админа\n@'
+                         f'{username} изменена\n'
+                         f'💸 Текущая ОЗР составляет {ozr}\n\n'
+                         '⚙️ Список админов', reply_markup=await kboard.stat_subadmin_kb())
+        await state.clear()
+    except Exception as e:
+        await message.answer(f"admin_statistic.put_ozr_for_subadmin | Ошибка бд: {e}", show_alert=True)
+        print(f"admin_statistic.put_ozr_for_subadmin | Ошибка бд: {str(e)}")
+        await state.clear()

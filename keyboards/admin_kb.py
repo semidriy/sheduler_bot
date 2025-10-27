@@ -97,6 +97,11 @@ async def subadmin_delete_kb(username):
     ))
         
     keyboard.add(InlineKeyboardButton(
+        text=f"💸 Изменить ОЗР",
+        callback_data=f"put_ozr_{username}"
+    ))
+    
+    keyboard.add(InlineKeyboardButton(
         text="🔙 Назад",
         callback_data="admin_stat"
     ))

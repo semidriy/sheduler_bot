@@ -464,3 +464,12 @@ async def get_sum_users_alive_referal(username):
     if alive_users is None:
         return None
     return alive_users[0]
+
+##  Изменяем ОЗР саб-админа
+async def put_ozr_subadmin(ozr, username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    await cursor.execute('UPDATE users SET ozr=? WHERE username=?;', (ozr, username,))
+    await connect.commit()
+    await cursor.close()
+    await connect.close()
