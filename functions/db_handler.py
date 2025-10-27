@@ -16,12 +16,21 @@ async def get_subadmin_user_id():
 async def get_subusers_user_id():
     connect = await aiosqlite.connect('bot.db')  
     cursor = await connect.cursor()
-    users = await cursor.execute('SELECT user_id FROM users WHERE id_group=3')
+    users = await cursor.execute('SELECT user_id FROM users WHERE id_group=3 AND dead=0')
     users = await users.fetchall()
     await cursor.close()
     await connect.close()
     users = [user[0] for user in users]
     return users
+
+##  Функция блокировки пользователей для рассылки
+async def update_user_dead_status(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    await cursor.execute('UPDATE users SET dead = 1 WHERE user_id=?;', (user_id,))
+    await connect.commit()
+    await cursor.close()
+    await connect.close()
 
 ##  Функция записи реферала
 async def get_referrer_user_id(user_id):

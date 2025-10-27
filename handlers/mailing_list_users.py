@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 
 from config_data.config import Config, load_config
-from functions.db_handler import get_subusers_user_id
+from functions.db_handler import get_subusers_user_id, update_user_dead_status
 from is_admin.isadmin import IsAdmin
 from keyboards.admin_kb import mailing_menu, mailing_user_menu, button_back_to_admin
 from state_fsm.fsm import AdminState, ScheduleStates
@@ -153,13 +153,24 @@ async def send_scheduled_message(user_id: int, message_id: str, schedule_time: d
                         await asyncio.sleep(0.3)
                     except Exception as e:
                         print(f"❌ Ошибка отправки для {user}: {e}")
+                        blocked_users = 0
+                        # Проверяем, является ли ошибка блокировкой бота
+                        if "bot was blocked by the user" in str(e):
+                            try:
+                            # Обновляем базу данных - помечаем пользователя как мертвого
+                                await update_user_dead_status(user)
+                                blocked_users += 1
+                                print(f"✅ Пользователь {user} помечен как заблокировавший бота")
+                            except Exception as db_error:
+                                print(f"❌ Ошибка обновления БД для пользователя {user}: {db_error}")
                 
                 count_user_access = len(users)
                 await bot.send_message(
                     user_id,
                     f'📬 Рассылка завершена\n\n'
                     f'👥 Всего пользователей: {count_user_access}\n'
-                    f'✅ Удалось отправить: {i}\n❌ Не удалось отправить: {count_user_access - i}',
+                    f'✅ Удалось отправить: {i}\n❌ Не удалось отправить: {count_user_access - i}\n'
+                    f'🚫 Заблокировали бота: {blocked_users}',
                     reply_markup=admin_keyboard_main
                 )
                 
@@ -256,8 +267,10 @@ async def send_message_immediately(query: types.CallbackQuery, state: FSMContext
 
 @router.message(AdminState.waiting_for_user_news)
 async def admin_news_message(message: types.Message, state: FSMContext):
+    ##  Достаем список живых юзеров
     users = await get_subusers_user_id()
     i = 0
+    blocked_users = 0
     await state.clear()
     
     # Подготовка данных сообщения
@@ -302,10 +315,21 @@ async def admin_news_message(message: types.Message, state: FSMContext):
             await asyncio.sleep(0.3)
         except Exception as e:
             print(f"❌ Ошибка отправки для {user}: {e}")
+
+            # Проверяем, является ли ошибка блокировкой бота
+            if "bot was blocked by the user" in str(e):
+                try:
+                    # Обновляем базу данных - помечаем пользователя как мертвого
+                    await update_user_dead_status(user)
+                    blocked_users += 1
+                    print(f"✅ Пользователь {user} помечен как заблокировавший бота")
+                except Exception as db_error:
+                    print(f"❌ Ошибка обновления БД для пользователя {user}: {db_error}")
     
     count_user_access = len(users)
     await message.answer(f'📬 Рассылка завершена\n\n'
                          f'👥 Всего пользователей: {count_user_access}\n'
-                         f'✅ Удалось отправить: {i}\n❌ Не удалось отправить: {count_user_access - i}',
+                         f'✅ Удалось отправить: {i}\n❌ Не удалось отправить: {count_user_access - i}\n'
+                         f'🚫 Заблокировали бота: {blocked_users}',
                          reply_markup=admin_keyboard_main
     )
