@@ -4,7 +4,7 @@ from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 import aiosqlite
 
-from functions.db_handler import get_bounty_cashback, get_bounty_sum_to_paid, get_count_referal, get_current_cashback, get_min_cashback, get_referrer_bep, get_referrer_bounty_sum, get_referrer_trc, get_username_for_bouynt, update_bounty_sum_to_paid
+from functions.db_handler import clear_bounty_sum_to_paid, get_bounty_cashback, get_bounty_sum_to_paid, get_count_referal, get_current_cashback, get_min_cashback, get_pay_all, get_referrer_bep, get_referrer_bounty_sum, get_referrer_trc, get_username_for_bouynt, update_bounty_sum_to_paid, update_all_pay_to_paid
 from state_fsm.fsm import SubAdminState
 from is_admin.isadmin import IsSubadmin
 from keyboards.subadm_kb import subadmin_menu, wallet_kb, balance_menu
@@ -48,10 +48,9 @@ async def referral_link(message: types.Message) -> None:
 async def statistic(message: types.Message) -> None:
     min_cashback = await get_min_cashback()
     user_id = message.from_user.id
-    bounty_cashback = await get_bounty_cashback()
-    count_referal = await get_count_referal(user_id)
-    count_bounty_cashback = count_referal * bounty_cashback
     current_cashback = await get_current_cashback(user_id)
+    count_referal = await get_count_referal(user_id)
+    count_bounty_cashback = await get_pay_all(message.from_user.username) + int(current_cashback)
     await message.answer('📊 <b>Статистика:</b>\n\n'
                         f'┌ Вы пригласили: <b>{count_referal}</b>\n'
                         f'├ Доход за все время: <b>{count_bounty_cashback}₽</b>\n'
@@ -112,8 +111,15 @@ async def cash_output(message: types.Message) -> None:
         else:
             await message.answer(f'💰 <b>Ваш баланс {bounty_sum}₽</b>\n\n' \
                              f'❌ Баланс для вывода должен быть <b>больше {min_cashback}₽</b>', reply_markup=subadmin_menu, parse_mode="HTML")
+            await clear_bounty_sum_to_paid(message.from_user.id)
     else:
+        await clear_bounty_sum_to_paid(message.from_user.id)
         await message.answer('❌ Прошлая заявка на вывод еще не обработана!\n Дождитесь ее обработки..', reply_markup=subadmin_menu, parse_mode="HTML")
+        # connect = await aiosqlite.connect('bot.db')
+        # cursor = await connect.cursor()
+        # await cursor.execute('UPDATE users SET bounty_sum_to_paid = 0 WHERE user_id=?', (message.from_user.id,))
+        # await connect.commit()
+
 
 @router.callback_query(F.data.startswith('clear_balance'))
 async def process_hello_text(query: types.CallbackQuery):
@@ -134,6 +140,7 @@ async def process_hello_text(query: types.CallbackQuery):
     await connect.commit()
     await cursor.close()
     await connect.close()
+    await update_all_pay_to_paid(bounty_sum, user_id)
     await query.message.edit_text('✅ <b>Заявка выполнена</b>\n\n'
                                f'👤 Его ссылка @{username}\n'
                                '📌 Его реквизиты TRC20\n'

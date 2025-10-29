@@ -114,7 +114,7 @@ async def bounty_referr(message: types.Message):
             # обновление поля оплаты
             await update_paid_value(message.chat.id)
             # уведомляем реферала
-            bounty_cashback = await get_bounty_cashback() 
+            bounty_cashback = await get_bounty_cashback(referrer_id) 
             await bot.send_message(referrer_id, '💰<b>Дзынь</b>💰\n\n'
                                 f'<b>+{bounty_cashback}₽</b> на ваш баланс 💵', parse_mode="HTML")
             # выплачиваем реферафу

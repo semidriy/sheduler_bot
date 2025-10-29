@@ -91,10 +91,10 @@ async def get_min_cashback():
     await connect.close()
     return min_cashback[0]
 
-async def get_bounty_cashback():
+async def get_bounty_cashback(user_id):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    bounty_cashback = await cursor.execute('SELECT value_int FROM others WHERE key="bounty_cashback";')
+    bounty_cashback = await cursor.execute('SELECT ozr FROM users WHERE user_id=?;', (user_id,))
     bounty_cashback = await bounty_cashback.fetchone()
     await cursor.close()
     await connect.close()
@@ -175,18 +175,49 @@ async def get_current_cashback(user_id):
     await cursor.close()
     await connect.close()
     if current_cashback is None:
-        return None
+        return 0
     return current_cashback[0]
 
 ##  Фиксируем сумму к выплате
-async def update_bounty_sum_to_paid(bounty_sum_to_paid, user_id):
+async def update_bounty_sum_to_paid(bounty_sum, user_id):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    bounty_sum_to_paid = await cursor.execute('UPDATE users SET bounty_sum_to_paid = ? WHERE user_id=?', (bounty_sum_to_paid, user_id,))
+    bounty_sum = await cursor.execute('UPDATE users SET bounty_sum_to_paid = ? WHERE user_id=?', (bounty_sum, user_id,))
     await connect.commit()
-    bounty_sum_to_paid = await bounty_sum_to_paid.fetchone()
+    bounty_sum = await bounty_sum.fetchone()
     await cursor.close()
     await connect.close()
+
+async def clear_bounty_sum_to_paid(user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    bounty_sum = await cursor.execute('UPDATE users SET bounty_sum_to_paid = 0 WHERE user_id=?', (user_id,))
+    await connect.commit()
+    bounty_sum = await bounty_sum.fetchone()
+    await cursor.close()
+    await connect.close()
+
+##  Добавляем сумму к общей выплате
+async def update_all_pay_to_paid(all_pay_to_paid, user_id):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    all_pay_to_paid = await cursor.execute('UPDATE users SET pay_all = pay_all + ? WHERE user_id = ?;', (all_pay_to_paid, user_id,))
+    await connect.commit()
+    all_pay_to_paid = await all_pay_to_paid.fetchone()
+    await cursor.close()
+    await connect.close()
+
+##  Просмотр всех выплат
+async def get_pay_all(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    sum_pay_all = await cursor.execute('SELECT pay_all FROM users WHERE username= ?;', (username,))
+    sum_pay_all = await sum_pay_all.fetchone()
+    await cursor.close()
+    await connect.close()
+    if sum_pay_all is None:
+        return None
+    return sum_pay_all[0]
 
 ##  
 async def get_bounty_sum_to_paid(user_id):
@@ -445,7 +476,7 @@ async def update_users_capcha(user_id):
 async def get_sum_users_dead_referal(username):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    dead_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 1 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
+    dead_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 0 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
     dead_users = await dead_users.fetchone()
     await cursor.close()
     await connect.close()
@@ -457,7 +488,7 @@ async def get_sum_users_dead_referal(username):
 async def get_sum_users_alive_referal(username):
     connect = await aiosqlite.connect('bot.db')
     cursor = await connect.cursor()
-    alive_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 0 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
+    alive_users = await cursor.execute('SELECT COUNT(r.user_id) as referral_count FROM users u LEFT JOIN users r ON u.user_id = r.referrer_id AND r.capcha = 1 WHERE u.username = ? GROUP BY u.user_id, u.username;', (username, ))
     alive_users = await alive_users.fetchone()
     await cursor.close()
     await connect.close()
@@ -473,3 +504,15 @@ async def put_ozr_subadmin(ozr, username):
     await connect.commit()
     await cursor.close()
     await connect.close()
+
+##  Посмотреть ОЗР саб-админа
+async def get_ozr_subadmin(username):
+    connect = await aiosqlite.connect('bot.db')
+    cursor = await connect.cursor()
+    ozr = await cursor.execute('SELECT ozr FROM users WHERE username=?;', (username,))
+    ozr = await ozr.fetchone()
+    await cursor.close()
+    await connect.close()
+    if ozr is None:
+        return None
+    return ozr[0]

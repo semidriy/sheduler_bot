@@ -14,7 +14,7 @@ cashback_edit_kb = types.InlineKeyboardMarkup(inline_keyboard=edit_cashback)
 @router.callback_query(F.data == 'cashback', IsAdmin())
 async def edit_cashback(query: types.CallbackQuery):
     min_cashback = await get_min_cashback()
-    bounty_cashback = await get_bounty_cashback()
+    bounty_cashback = await get_bounty_cashback(query.from_user.id)
     await query.message.edit_text(f'⚠️ Сумма минимальной выплаты составляет {min_cashback}₽\n\n'
                                   f'💸 Оплата за реферала составляет {bounty_cashback}₽', reply_markup=cashback_edit_kb)
     
