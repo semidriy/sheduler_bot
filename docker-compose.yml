@@ -1,0 +1,7 @@
+version: '3.3'
+
+services:
+  bounty_bot: ##  Имя стека
+    image: localhost/bounty_bot:1.0.0  ##  Имя образа
+    container_name: bounty_bot  ##  Имя контейнера
+    restart: always
